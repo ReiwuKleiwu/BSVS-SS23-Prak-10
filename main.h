@@ -1,0 +1,6 @@
+
+
+#ifndef BSVS_SS23_PRAK_10_MAIN_H
+#define BSVS_SS23_PRAK_10_MAIN_H
+
+#endif //BSVS_SS23_PRAK_10_MAIN_H
