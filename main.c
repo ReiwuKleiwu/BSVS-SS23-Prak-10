@@ -25,12 +25,12 @@ typedef enum {
     METHOD_DELETE
 } RequestMethod;
 
-void requestHandler(char* request);
-void methodHandler(RequestMethod method, const char* key, const char* value);
+void requestHandler(char* request, char* res);
+void methodHandler(RequestMethod method, const char* key, const char* value, char* res);
 RequestMethod stringToRequestMethod(const char* method);
-int handlePUT(const char* key, const char* value);
-
-// 🤡
+void handlePUT(const char* key, const char* value, char* res);
+void handleGET(const char* key, char* res);
+void handleDELETE(const char* key, char* res);
 
 int main() {
 
@@ -96,12 +96,14 @@ int main() {
 
             in[bytes_read] = '\0';
 
-            requestHandler(in);
+            char res[BUFFERSIZE];
 
-            printf("sending back the %d bytes I received...\n", bytes_read);
+            requestHandler(in, res);
+
             printf("%s\n", in);
+            printf("Response: %s\n", res);
 
-            //write(client_socket, in, bytes_read);
+            write(client_socket, res, BUFFERSIZE);
             bytes_read = read(client_socket, in, BUFFERSIZE);
         }
 
@@ -124,7 +126,7 @@ RequestMethod stringToRequestMethod(const char* method) {
     }
 }
 
-void requestHandler(char* request) {
+void requestHandler(char* request, char* res) {
     const char* method = strtok(request, ":");
     const char* key = strtok(NULL, ":");
     const char* value = strtok(NULL, ":");
@@ -137,19 +139,19 @@ void requestHandler(char* request) {
         printf("The value requested was: %s\n", value);
     }
 
-    methodHandler(stringToRequestMethod(method), key, value);
+    methodHandler(stringToRequestMethod(method), key, value, res);
 }
 
-void methodHandler(RequestMethod method, const char* key, const char* value) {
+void methodHandler(RequestMethod method, const char* key, const char* value, char* res) {
     switch (method) {
         case METHOD_GET:
-            printf("Handling GET method\n");
+            handleGET(key, res);
             break;
         case METHOD_PUT:
-            handlePUT(key, value);
+            handlePUT(key, value, res);
             break;
         case METHOD_DELETE:
-            printf("Handling DELETE method\n");
+            handleDELETE(key, res);
             break;
         default:
             printf("Unknown method\n");
@@ -157,10 +159,23 @@ void methodHandler(RequestMethod method, const char* key, const char* value) {
     }
 }
 
-int handlePUT(const char* key, const char* value) {
+void handlePUT(const char* key, const char* value, char* res) {
     if(value == NULL) {
         if(SHOW_LOGS) printf("Value was NULL!");
-        return -1;
     }
-    return 0;
+}
+
+void handleGET(const char* key, char* res) {
+    const int someValue = 0;
+
+    res = "AMOGUS";
+
+    //TODO: Get value from key/val storage
+    //TODO: Exception-Handling
+}
+
+void handleDELETE(const char* key, char* res) {
+
+    //TODO: Delete key/value pare from storage
+    //TODO: Exception-Handling
 }
