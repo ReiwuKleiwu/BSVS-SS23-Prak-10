@@ -1,0 +1,3 @@
+C:/Users/struc/CLionProjects/PrakBs23/BSVS-SS23-Prak-10/cmake-build-debug/CMakeFiles/TestRM.dir
+C:/Users/struc/CLionProjects/PrakBs23/BSVS-SS23-Prak-10/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/struc/CLionProjects/PrakBs23/BSVS-SS23-Prak-10/cmake-build-debug/CMakeFiles/rebuild_cache.dir
