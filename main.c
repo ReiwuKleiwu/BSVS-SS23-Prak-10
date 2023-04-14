@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include "hashtable.h"
 
 #define BUFFERSIZE 1024 // Größe des Buffers
 #define PORT 5678
@@ -25,14 +26,17 @@ typedef enum {
     METHOD_DELETE
 } RequestMethod;
 
-void requestHandler(char* request, char* res);
-void methodHandler(RequestMethod method, const char* key, const char* value, char* res);
+void requestHandler(char* request, hash_table *keyValStore, char* res);
+void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res);
 RequestMethod stringToRequestMethod(const char* method);
-void handlePUT(const char* key, const char* value, char* res);
-void handleGET(const char* key, char* res);
-void handleDELETE(const char* key, char* res);
+void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res);
+void handleGET(const char* key, hash_table *keyValStore, char* res);
+void handleDELETE(const char* key, hash_table *keyValStore, char* res);
+void removeTrailingNewline(char* str);
 
 int main() {
+    const int tablesize = (1 << 20);
+    hash_table *keyValStore = hash_table_create(tablesize);
 
     int listening_socket; // Rendevouz-Descriptor
     int client_socket; // Verbindungs-Descriptor
@@ -98,13 +102,11 @@ int main() {
 
             char res[BUFFERSIZE];
 
-            requestHandler(in, res);
+            requestHandler(in, keyValStore, res);
 
-            printf("%s\n", in);
-            printf("Response: %s\n", res);
-
-            write(client_socket, res, BUFFERSIZE);
+            write(client_socket, res, strlen(res));
             bytes_read = read(client_socket, in, BUFFERSIZE);
+            strcpy(res, "");
         }
 
         close(client_socket);
@@ -126,12 +128,25 @@ RequestMethod stringToRequestMethod(const char* method) {
     }
 }
 
-void requestHandler(char* request, char* res) {
+void removeTrailingNewline(char* str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n') {
+        str[len - 1] = '\0';
+    }
+}
+
+void requestHandler(char* request, hash_table *keyValStore, char* res) {
     const char* method = strtok(request, ":");
     const char* key = strtok(NULL, ":");
     const char* value = strtok(NULL, ":");
 
     if(!(method && key)) return;
+
+    removeTrailingNewline(method);
+    removeTrailingNewline(key);
+    if (value) {
+        removeTrailingNewline(value);
+    }
 
     if(SHOW_LOGS) {
         printf("The method used was: %s\n", method);
@@ -139,19 +154,18 @@ void requestHandler(char* request, char* res) {
         printf("The value requested was: %s\n", value);
     }
 
-    methodHandler(stringToRequestMethod(method), key, value, res);
+    methodHandler(stringToRequestMethod(method), key, value, keyValStore, res);
 }
-
-void methodHandler(RequestMethod method, const char* key, const char* value, char* res) {
+void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res) {
     switch (method) {
         case METHOD_GET:
-            handleGET(key, res);
+            handleGET(key, keyValStore, res);
             break;
         case METHOD_PUT:
-            handlePUT(key, value, res);
+            handlePUT(key, value, keyValStore, res);
             break;
         case METHOD_DELETE:
-            handleDELETE(key, res);
+            handleDELETE(key, keyValStore, res);
             break;
         default:
             printf("Unknown method\n");
@@ -159,23 +173,42 @@ void methodHandler(RequestMethod method, const char* key, const char* value, cha
     }
 }
 
-void handlePUT(const char* key, const char* value, char* res) {
+void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res) {
     if(value == NULL) {
         if(SHOW_LOGS) printf("Value was NULL!");
     }
+
+    if(hash_table_upsert(keyValStore, key, value)) {
+        snprintf(res, BUFFERSIZE, "PUT operation: Key: \"%s\", Value: \"%s\" successfully inserted/updated.\n", key, value);
+    } else {
+        snprintf(res, BUFFERSIZE, "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\n", key, value);
+    }
+
+    if(SHOW_LOGS) hash_table_print(keyValStore);
 }
 
-void handleGET(const char* key, char* res) {
+void handleGET(const char* key, hash_table *keyValStore, char* res) {
     const int someValue = 0;
 
-    res = "AMOGUS";
+    char* value = hash_table_lookup(keyValStore, key);
 
-    //TODO: Get value from key/val storage
-    //TODO: Exception-Handling
+    if(!value) {
+        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\" not found in the store.\n", key);
+    } else {
+        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\n", key, value);
+    }
+
+    if(SHOW_LOGS) hash_table_print(keyValStore);
 }
 
-void handleDELETE(const char* key, char* res) {
+void handleDELETE(const char* key, hash_table *keyValStore, char* res) {
+    const char* deletedValue = hash_table_delete(keyValStore, key);
 
-    //TODO: Delete key/value pare from storage
-    //TODO: Exception-Handling
+    if(!deletedValue) {
+        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\n", key);
+    } else {
+        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\", Value: \"%s\" successfully deleted from the store.\n", key, deletedValue);
+    }
+
+    if(SHOW_LOGS) hash_table_print(keyValStore);
 }
