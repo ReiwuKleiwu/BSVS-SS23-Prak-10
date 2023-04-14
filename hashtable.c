@@ -42,6 +42,7 @@ hash_table *hash_table_create(uint32_t size) {
     ht->elements = calloc(sizeof(entry*), ht->size);
     return ht;
 }
+
 void hash_table_destroy(hash_table *ht) {
     //clean up individual elements
     for(int i = 0; i < ht->size; i++) {
@@ -57,6 +58,7 @@ void hash_table_destroy(hash_table *ht) {
     free(ht->elements);
     free(ht);
 }
+
 void hash_table_print(hash_table *ht) {
     printf("Start Table \n");
     for(int i = 0; i < ht->size; i++) {

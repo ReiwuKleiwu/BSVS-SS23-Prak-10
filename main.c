@@ -129,16 +129,13 @@ RequestMethod stringToRequestMethod(const char* method) {
 }
 
 void removeTrailingNewline(char* str) {
-    size_t len = strlen(str);
-    if (len > 0 && str[len - 1] == '\n') {
-        str[len - 1] = '\0';
-    }
+    str[strcspn(str, "\n")] = 0;
 }
 
 void requestHandler(char* request, hash_table *keyValStore, char* res) {
-    const char* method = strtok(request, ":");
-    const char* key = strtok(NULL, ":");
-    const char* value = strtok(NULL, ":");
+    char* method = strtok(request, ":");
+    char* key = strtok(NULL, ":");
+    char* value = strtok(NULL, ":");
 
     if(!(method && key)) return;
 
@@ -149,13 +146,14 @@ void requestHandler(char* request, hash_table *keyValStore, char* res) {
     }
 
     if(SHOW_LOGS) {
-        printf("The method used was: %s\n", method);
+        printf("The method used was : %s\n", method);
         printf("The key requested was: %s\n", key);
         printf("The value requested was: %s\n", value);
     }
 
     methodHandler(stringToRequestMethod(method), key, value, keyValStore, res);
 }
+
 void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res) {
     switch (method) {
         case METHOD_GET:
@@ -188,8 +186,6 @@ void handlePUT(const char* key, const char* value, hash_table *keyValStore, char
 }
 
 void handleGET(const char* key, hash_table *keyValStore, char* res) {
-    const int someValue = 0;
-
     char* value = hash_table_lookup(keyValStore, key);
 
     if(!value) {

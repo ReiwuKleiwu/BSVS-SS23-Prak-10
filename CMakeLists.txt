@@ -3,4 +3,4 @@ project(BSVS-SS23-Prak)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(TestRM main.c hashtable.c hashtable.h)
+add_executable(BSVS-SS23-Prak main.c hashtable.c hashtable.h)
