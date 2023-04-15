@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -32,7 +33,7 @@ RequestMethod stringToRequestMethod(const char* method);
 void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res);
 void handleGET(const char* key, hash_table *keyValStore, char* res);
 void handleDELETE(const char* key, hash_table *keyValStore, char* res);
-void removeTrailingNewline(char* str);
+void remove_whitespace_chars(char* str);
 
 int main() {
     const int tablesize = (1 << 20);
@@ -89,7 +90,7 @@ int main() {
         client_socket = accept(listening_socket, (struct sockaddr *) &client, &client_len);
 
         if(SHOW_LOGS) {
-            printf("Socket connected to server!");
+            printf("Socket connected to server!\n");
         }
 
         // Lesen von Daten, die der Client schickt
@@ -128,8 +129,14 @@ RequestMethod stringToRequestMethod(const char* method) {
     }
 }
 
-void removeTrailingNewline(char* str) {
-    str[strcspn(str, "\n")] = 0;
+void remove_whitespace_chars(char* str) {
+    char *src, *dst;
+    for (src = dst = str; *src != '\0'; src++) {
+        if (!isspace(*src)) {
+            *dst++ = *src;
+        }
+    }
+    *dst = '\0';
 }
 
 void requestHandler(char* request, hash_table *keyValStore, char* res) {
@@ -139,10 +146,10 @@ void requestHandler(char* request, hash_table *keyValStore, char* res) {
 
     if(!(method && key)) return;
 
-    removeTrailingNewline(method);
-    removeTrailingNewline(key);
+    remove_whitespace_chars(method);
+    remove_whitespace_chars(key);
     if (value) {
-        removeTrailingNewline(value);
+        remove_whitespace_chars(value);
     }
 
     if(SHOW_LOGS) {
