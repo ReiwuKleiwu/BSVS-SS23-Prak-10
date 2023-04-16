@@ -98,12 +98,15 @@ int main() {
 
         // Zurückschicken der Daten, solange der Client welche schickt (und kein Fehler passiert)
         while (bytes_read > 0) {
-
             in[bytes_read] = '\0';
-
             char res[BUFFERSIZE];
 
-            requestHandler(in, keyValStore, res);
+            // prüfen, ob der Befehl mit PUT:, GET: oder DELETE: beginnt
+            if (strncmp(in, "PUT:", 4) == 0 || strncmp(in, "GET:", 4) == 0 || strncmp(in, "DELETE:", 7) == 0) {
+                requestHandler(in, keyValStore, res);
+            } else {
+                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen.");
+            }
 
             write(client_socket, res, strlen(res));
             bytes_read = read(client_socket, in, BUFFERSIZE);
@@ -181,6 +184,8 @@ void methodHandler(RequestMethod method, const char* key, const char* value, has
 void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res) {
     if(value == NULL) {
         if(SHOW_LOGS) printf("Value was NULL!");
+        snprintf(res, BUFFERSIZE, "PUT operation: Value is null. Use PUT:KEY:VALUE\n");
+        return;
     }
 
     if(hash_table_upsert(keyValStore, key, value)) {
