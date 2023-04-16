@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <regex.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -100,13 +101,26 @@ int main() {
         while (bytes_read > 0) {
             in[bytes_read] = '\0';
             char res[BUFFERSIZE];
+            regex_t regex;
+            int reti;
 
-            // prüfen, ob der Befehl mit PUT:, GET: oder DELETE: beginnt
-            if (strncmp(in, "PUT:", 4) == 0 || strncmp(in, "GET:", 4) == 0 || strncmp(in, "DELETE:", 7) == 0) {
+            // Regulärer Ausdruck: "^PUT:[^\\s]+:[^\\s]+|^GET:[^\\s]+|^DELETE:[^\\s]+"
+            reti = regcomp(&regex, "^PUT:[^\\s]+:[^\\s]+|^GET:[^\\s]+|^DELETE:[^\\s]+", REG_EXTENDED);
+            if (reti) {
+                fprintf(stderr, "Could not compile regex\n");
+                exit(-1);
+            }
+
+            // Überprüfen, ob der Befehl mit PUT:, GET: oder DELETE: beginnt und den richtigen Format hat
+            reti = regexec(&regex, in, 0, NULL, 0);
+            if (!reti) {
                 requestHandler(in, keyValStore, res);
             } else {
-                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen.");
+                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben.");
             }
+
+            // Aufräumen
+            regfree(&regex);
 
             write(client_socket, res, strlen(res));
             bytes_read = read(client_socket, in, BUFFERSIZE);
