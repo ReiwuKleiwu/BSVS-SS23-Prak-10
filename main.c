@@ -116,7 +116,7 @@ int main() {
             if (!reti) {
                 requestHandler(in, keyValStore, res);
             } else {
-                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben.");
+                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben.\n");
             }
 
             // Aufräumen
