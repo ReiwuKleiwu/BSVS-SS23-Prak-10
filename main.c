@@ -35,6 +35,7 @@ void handlePUT(const char* key, const char* value, hash_table *keyValStore, char
 void handleGET(const char* key, hash_table *keyValStore, char* res);
 void handleDELETE(const char* key, hash_table *keyValStore, char* res);
 void remove_whitespace_chars(char* str);
+int readUntilNewLine(int socket_client, char *buf, int len);
 
 int main() {
     const int tablesize = (1 << 20);
@@ -92,41 +93,38 @@ int main() {
 
         if(SHOW_LOGS) {
             printf("Socket connected to server!\n");
+            const char res[] = "Willkommen: \r\n";
+            send(client_socket, res, strlen(res), 0);
+
         }
+        // Daten vom Client empfangen
+        ssize_t received_bytes;
+        while ((received_bytes = readUntilNewLine(client_socket, in, BUFFERSIZE)) > 0) {
+            printf("Empfangen: %s (%lu Bytes)\n", in, sizeof(in));
 
-        // Lesen von Daten, die der Client schickt
-        bytes_read = read(client_socket, in, BUFFERSIZE);
-
-        // Zurückschicken der Daten, solange der Client welche schickt (und kein Fehler passiert)
-        while (bytes_read > 0) {
-            in[bytes_read] = '\0';
-            char res[BUFFERSIZE];
             regex_t regex;
-            int reti;
+            int rettich; //Joke
+            char res[BUFFERSIZE];
 
-            // Regulärer Ausdruck: "^PUT:[^\\s]+:[^\\s]+|^GET:[^\\s]+|^DELETE:[^\\s]+"
-            reti = regcomp(&regex, "^PUT:[^\\s]+:[^\\s]+|^GET:[^\\s]+|^DELETE:[^\\s]+", REG_EXTENDED);
-            if (reti) {
+            // Regulärer Ausdruck ob PUT:<key>:<value> GET:<key> DELETE:<key>
+            rettich = regcomp(&regex, "^PUT:[^\\s]+:[^\\s]+|^GET:[^\\s]+|^DELETE:[^\\s]+", 1);
+            if (rettich) {
                 fprintf(stderr, "Could not compile regex\n");
                 exit(-1);
             }
 
             // Überprüfen, ob der Befehl mit PUT:, GET: oder DELETE: beginnt und den richtigen Format hat
-            reti = regexec(&regex, in, 0, NULL, 0);
-            if (!reti) {
+            rettich = regexec(&regex, in, 0, NULL, 0);
+            if (!rettich) {
                 requestHandler(in, keyValStore, res);
             } else {
-                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben.\n");
+                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben. \r\n");
             }
-
+            // Senden
+            send(client_socket, res, strlen(res), 0);
             // Aufräumen
             regfree(&regex);
-
-            write(client_socket, res, strlen(res));
-            bytes_read = read(client_socket, in, BUFFERSIZE);
-            strcpy(res, "");
         }
-
         close(client_socket);
     }
 
@@ -198,14 +196,14 @@ void methodHandler(RequestMethod method, const char* key, const char* value, has
 void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res) {
     if(value == NULL) {
         if(SHOW_LOGS) printf("Value was NULL!");
-        snprintf(res, BUFFERSIZE, "PUT operation: Value is null. Use PUT:KEY:VALUE\n");
+        snprintf(res, BUFFERSIZE, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
         return;
     }
 
     if(hash_table_upsert(keyValStore, key, value)) {
-        snprintf(res, BUFFERSIZE, "PUT operation: Key: \"%s\", Value: \"%s\" successfully inserted/updated.\n", key, value);
+        snprintf(res, BUFFERSIZE, "PUT operation: Key: \"%s\", Value: \"%s\" successfully inserted/updated.\r\n", key, value);
     } else {
-        snprintf(res, BUFFERSIZE, "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\n", key, value);
+        snprintf(res, BUFFERSIZE, "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\r\n", key, value);
     }
 
     if(SHOW_LOGS) hash_table_print(keyValStore);
@@ -215,9 +213,9 @@ void handleGET(const char* key, hash_table *keyValStore, char* res) {
     char* value = hash_table_lookup(keyValStore, key);
 
     if(!value) {
-        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\" not found in the store.\n", key);
+        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\" not found in the store.\r\n", key);
     } else {
-        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\n", key, value);
+        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\r\n", key, value);
     }
 
     if(SHOW_LOGS) hash_table_print(keyValStore);
@@ -227,10 +225,24 @@ void handleDELETE(const char* key, hash_table *keyValStore, char* res) {
     const char* deletedValue = hash_table_delete(keyValStore, key);
 
     if(!deletedValue) {
-        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\n", key);
+        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\r\n", key);
     } else {
-        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\", Value: \"%s\" successfully deleted from the store.\n", key, deletedValue);
+        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\", Value: \"%s\" successfully deleted from the store.\r\n", key, deletedValue);
     }
 
     if(SHOW_LOGS) hash_table_print(keyValStore);
+}
+int readUntilNewLine(int socket_client, char *buf, int len) {
+    int total_read = 0, bytes_read;
+    char *s = buf;
+
+    while (total_read < len - 1) {
+        bytes_read = recv(socket_client, s, 1, 0);
+        if (bytes_read <= 0 || *s == '\n') break;
+        s += bytes_read;
+        total_read += bytes_read;
+    }
+
+    *s = '\0'; // Null-Terminator hinzufügen
+    return (bytes_read < 0) ? bytes_read : total_read;
 }
