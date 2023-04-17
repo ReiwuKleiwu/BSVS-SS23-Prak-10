@@ -7,34 +7,19 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <regex.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "hashtable.h"
+#include "handle_requests.h"
+#include "validate_user_input.h"
 
 #define BUFFERSIZE 1024 // Größe des Buffers
 #define PORT 5678
 #define SHOW_LOGS 1
 
-
-typedef enum {
-    METHOD_UNKNOWN = 0,
-    METHOD_GET,
-    METHOD_PUT,
-    METHOD_DELETE
-} RequestMethod;
-
-void requestHandler(char* request, hash_table *keyValStore, char* res);
-void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res);
-RequestMethod stringToRequestMethod(const char* method);
-void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res);
-void handleGET(const char* key, hash_table *keyValStore, char* res);
-void handleDELETE(const char* key, hash_table *keyValStore, char* res);
-void remove_whitespace_chars(char* str);
 int readUntilNewLine(int socket_client, char *buf, int len);
 
 int main() {
@@ -46,7 +31,7 @@ int main() {
 
     struct sockaddr_in client; // Socketadresse eines Clients
     socklen_t client_len; // Länge der Client-Daten
-    char in[BUFFERSIZE + 1]; // Daten vom Client an den Server
+    char clientRequest[BUFFERSIZE + 1]; // Daten vom Client an den Server
     int bytes_read; // Anzahl der Bytes, die der Client geschickt hat
 
 
@@ -95,35 +80,19 @@ int main() {
             printf("Socket connected to server!\n");
             const char res[] = "Willkommen: \r\n";
             send(client_socket, res, strlen(res), 0);
-
         }
+        
         // Daten vom Client empfangen
         ssize_t received_bytes;
-        while ((received_bytes = readUntilNewLine(client_socket, in, BUFFERSIZE)) > 0) {
-            printf("Empfangen: %s (%lu Bytes)\n", in, sizeof(in));
+        while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
 
-            regex_t regex;
-            int rettich; //Joke
-            char res[BUFFERSIZE];
+            char serverResponse[BUFFERSIZE];
 
-            // Regulärer Ausdruck ob PUT:<key>:<value> GET:<key> DELETE:<key>
-            rettich = regcomp(&regex, "^PUT:[^\\s]+:[^\\s]+|^GET:[^\\s]+|^DELETE:[^\\s]+", 1);
-            if (rettich) {
-                fprintf(stderr, "Could not compile regex\n");
-                exit(-1);
-            }
+            validateFormat(clientRequest, serverResponse);
+            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE);
 
-            // Überprüfen, ob der Befehl mit PUT:, GET: oder DELETE: beginnt und den richtigen Format hat
-            rettich = regexec(&regex, in, 0, NULL, 0);
-            if (!rettich) {
-                requestHandler(in, keyValStore, res);
-            } else {
-                strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben. \r\n");
-            }
-            // Senden
-            send(client_socket, res, strlen(res), 0);
-            // Aufräumen
-            regfree(&regex);
+            // Antwort senden
+            send(client_socket, serverResponse, strlen(serverResponse), 0);
         }
         close(client_socket);
     }
@@ -132,106 +101,6 @@ int main() {
     close(listening_socket);
 }
 
-RequestMethod stringToRequestMethod(const char* method) {
-    if (strcmp(method, "GET") == 0) {
-        return METHOD_GET;
-    } else if (strcmp(method, "PUT") == 0) {
-        return METHOD_PUT;
-    } else if (strcmp(method, "DELETE") == 0) {
-        return METHOD_DELETE;
-    } else {
-        return METHOD_UNKNOWN;
-    }
-}
-
-void remove_whitespace_chars(char* str) {
-    char *src, *dst;
-    for (src = dst = str; *src != '\0'; src++) {
-        if (!isspace(*src)) {
-            *dst++ = *src;
-        }
-    }
-    *dst = '\0';
-}
-
-void requestHandler(char* request, hash_table *keyValStore, char* res) {
-    char* method = strtok(request, ":");
-    char* key = strtok(NULL, ":");
-    char* value = strtok(NULL, ":");
-
-    if(!(method && key)) return;
-
-    remove_whitespace_chars(method);
-    remove_whitespace_chars(key);
-    if (value) {
-        remove_whitespace_chars(value);
-    }
-
-    if(SHOW_LOGS) {
-        printf("The method used was : %s\n", method);
-        printf("The key requested was: %s\n", key);
-        printf("The value requested was: %s\n", value);
-    }
-
-    methodHandler(stringToRequestMethod(method), key, value, keyValStore, res);
-}
-
-void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res) {
-    switch (method) {
-        case METHOD_GET:
-            handleGET(key, keyValStore, res);
-            break;
-        case METHOD_PUT:
-            handlePUT(key, value, keyValStore, res);
-            break;
-        case METHOD_DELETE:
-            handleDELETE(key, keyValStore, res);
-            break;
-        default:
-            printf("Unknown method\n");
-            break;
-    }
-}
-
-void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res) {
-    if(value == NULL) {
-        if(SHOW_LOGS) printf("Value was NULL!");
-        snprintf(res, BUFFERSIZE, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
-        return;
-    }
-
-    if(hash_table_upsert(keyValStore, key, value)) {
-        snprintf(res, BUFFERSIZE, "PUT operation: Key: \"%s\", Value: \"%s\" successfully inserted/updated.\r\n", key, value);
-    } else {
-        snprintf(res, BUFFERSIZE, "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\r\n", key, value);
-    }
-
-    if(SHOW_LOGS) hash_table_print(keyValStore);
-}
-
-void handleGET(const char* key, hash_table *keyValStore, char* res) {
-    char* value = hash_table_lookup(keyValStore, key);
-
-    if(!value) {
-        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\" not found in the store.\r\n", key);
-    } else {
-        snprintf(res, BUFFERSIZE, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\r\n", key, value);
-    }
-
-    if(SHOW_LOGS) hash_table_print(keyValStore);
-}
-
-void handleDELETE(const char* key, hash_table *keyValStore, char* res) {
-    const char* deletedValue = hash_table_delete(keyValStore, key);
-
-    if(!deletedValue) {
-        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\r\n", key);
-    } else {
-        snprintf(res, BUFFERSIZE, "DELETE operation: Key: \"%s\", Value: \"%s\" successfully deleted from the store.\r\n", key, deletedValue);
-    }
-
-    if(SHOW_LOGS) hash_table_print(keyValStore);
-}
 int readUntilNewLine(int socket_client, char *buf, int len) {
     int total_read = 0, bytes_read;
     char *s = buf;
