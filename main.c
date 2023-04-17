@@ -93,14 +93,13 @@ int main() {
 
         if(SHOW_LOGS) {
             printf("Socket connected to server!\n");
-            const char res[] = "Willkommen:\r\n";
+            const char res[] = "Willkommen: \r\n";
             send(client_socket, res, strlen(res), 0);
 
         }
         // Daten vom Client empfangen
         ssize_t received_bytes;
         while ((received_bytes = readUntilNewLine(client_socket, in, BUFFERSIZE)) > 0) {
-            in[received_bytes] = '\0'; // Null-Terminator hinzufügen
             printf("Empfangen: %s (%lu Bytes)\n", in, sizeof(in));
 
             regex_t regex;
@@ -244,6 +243,6 @@ int readUntilNewLine(int socket_client, char *buf, int len) {
         total_read += bytes_read;
     }
 
-    *s = '\0';
+    *s = '\0'; // Null-Terminator hinzufügen
     return (bytes_read < 0) ? bytes_read : total_read;
 }
