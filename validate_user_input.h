@@ -5,7 +5,7 @@
 #ifndef BSVS_SS23_PRAK_VALIDATE_USER_INPUT_H
 #define BSVS_SS23_PRAK_VALIDATE_USER_INPUT_H
 
-void validateFormat(char* req, char* res);
+char* validateFormat(char* req);
 void removeWhitespaceChars(char* req);
 
 

@@ -9,7 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <regex.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "hashtable.h"
@@ -68,7 +67,6 @@ int main() {
     }
 
     while(1) {
-
         if(SHOW_LOGS) {
             printf("Waiting for incoming socket connection..\n");
         }
@@ -88,8 +86,14 @@ int main() {
 
             char serverResponse[BUFFERSIZE];
 
-            validateFormat(clientRequest, serverResponse);
-            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE);
+            char* validatedRequest = validateFormat(clientRequest);
+
+            if(validatedRequest == NULL) {
+                strcpy(serverResponse, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben. \r\n");
+                send(client_socket, serverResponse, strlen(serverResponse), 0);
+                continue;
+            }
+            requestHandler(validatedRequest, keyValStore, serverResponse, BUFFERSIZE);
 
             // Antwort senden
             send(client_socket, serverResponse, strlen(serverResponse), 0);
@@ -101,17 +105,43 @@ int main() {
     close(listening_socket);
 }
 
+/*
 int readUntilNewLine(int socket_client, char *buf, int len) {
     int total_read = 0, bytes_read;
     char *s = buf;
 
     while (total_read < len - 1) {
         bytes_read = recv(socket_client, s, 1, 0);
-        if (bytes_read <= 0 || *s == '\n') break;
+        if (bytes_read <= 0 || *s == '\n' || *s == '\r') break;
         s += bytes_read;
         total_read += bytes_read;
     }
 
     *s = '\0'; // Null-Terminator hinzufügen
     return (bytes_read < 0) ? bytes_read : total_read;
+}
+ */
+
+int readUntilNewLine(int socket_client, char *buf, int len) {
+    int total_bytes_read = 0;
+    int bytes_read;
+    char tmp;
+
+    // Ensure the buffer is initially empty
+    memset(buf, 0, len);
+
+    // Read data from the client socket until a newline is encountered
+    while ((bytes_read = recv(socket_client, &tmp, 1, 0)) > 0 && total_bytes_read < len - 1) {
+        if (tmp == '\r') {
+            break;
+        }
+
+        buf[total_bytes_read++] = tmp;
+    }
+
+    // Add null-terminator to the end of the buffer
+    buf[total_bytes_read] = '\0';
+
+    // Return the number of bytes read, or -1 if an error occurred
+    return bytes_read > 0 ? total_bytes_read : -1;
 }
