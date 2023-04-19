@@ -86,14 +86,8 @@ int main() {
 
             char serverResponse[BUFFERSIZE];
 
-            char* validatedRequest = validateFormat(clientRequest);
-
-            if(validatedRequest == NULL) {
-                strcpy(serverResponse, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben. \r\n");
-                send(client_socket, serverResponse, strlen(serverResponse), 0);
-                continue;
-            }
-            requestHandler(validatedRequest, keyValStore, serverResponse, BUFFERSIZE);
+            validateFormat(clientRequest, serverResponse);
+            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE);
 
             // Antwort senden
             send(client_socket, serverResponse, strlen(serverResponse), 0);
@@ -104,23 +98,6 @@ int main() {
     // Rendevouz Descriptor schließen
     close(listening_socket);
 }
-
-/*
-int readUntilNewLine(int socket_client, char *buf, int len) {
-    int total_read = 0, bytes_read;
-    char *s = buf;
-
-    while (total_read < len - 1) {
-        bytes_read = recv(socket_client, s, 1, 0);
-        if (bytes_read <= 0 || *s == '\n' || *s == '\r') break;
-        s += bytes_read;
-        total_read += bytes_read;
-    }
-
-    *s = '\0'; // Null-Terminator hinzufügen
-    return (bytes_read < 0) ? bytes_read : total_read;
-}
- */
 
 int readUntilNewLine(int socket_client, char *buf, int len) {
     int total_bytes_read = 0;
