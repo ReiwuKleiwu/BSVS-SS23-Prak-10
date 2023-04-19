@@ -11,10 +11,11 @@ typedef enum {
     METHOD_UNKNOWN = 0,
     METHOD_GET,
     METHOD_PUT,
-    METHOD_DELETE
+    METHOD_DELETE,
+    METHOD_QUIT
 } RequestMethod;
 
-void requestHandler(char* request, hash_table *keyValStore, char* res, int requestBufferSize);
+void requestHandler(char* request, hash_table *keyValStore, char* res, int requestBufferSize, int socket_client);
 RequestMethod stringToRequestMethod(const char* method);
 
 #endif //BSVS_SS23_PRAK_HANDLE_REQUESTS_H

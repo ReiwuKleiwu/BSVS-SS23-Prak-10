@@ -8,10 +8,11 @@
 #include "hashtable.h"
 #include "handle_requests.h"
 
-void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize);
+void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize, int socket_client);
 void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize);
 void handleGET(const char* key, hash_table *keyValStore, char* res, int requestBufferSize);
 void handleDELETE(const char* key, hash_table *keyValStore, char* res, int requestBufferSize);
+void handleQUIT(char* res, int requestBufferSize, int socket_client);
 
 
 #endif //BSVS_SS23_PRAK_HANDLE_METHODS_H

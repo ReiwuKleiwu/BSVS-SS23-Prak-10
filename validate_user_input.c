@@ -11,7 +11,7 @@
 
 void validateFormat(char* req, char* res) {
     regex_t regex;
-    int requestREGEX = regcomp(&regex, "^PUT:[^\\s]+:.+|^GET:[^\\s]+|^DELETE:[^\\s]+", 1);
+    int requestREGEX = regcomp(&regex, "^PUT:[^\\s]+:.+|^GET:[^\\s]+|^DELETE:[^\\s]+|^QUIT", 1);
 
     if(requestREGEX) {
         fprintf(stderr, "Could not compile regex\n");

@@ -66,6 +66,12 @@ int main() {
         exit(-1);
     }
 
+    for(int i = 0; i < 1000000; i++) {
+        char str[7*4];
+        sprintf(str, "%d", i);
+        hash_table_upsert(keyValStore, str, str);
+    }
+
     while(1) {
         if(SHOW_LOGS) {
             printf("Waiting for incoming socket connection..\n");
@@ -87,7 +93,7 @@ int main() {
             char serverResponse[BUFFERSIZE];
 
             validateFormat(clientRequest, serverResponse);
-            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE);
+            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
 
             // Antwort senden
             send(client_socket, serverResponse, strlen(serverResponse), 0);

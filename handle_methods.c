@@ -5,8 +5,10 @@
 #include "handle_methods.h"
 #include <stdio.h>
 #include "hashtable.h"
+#include <sys/socket.h>
+#include <unistd.h>
 
-void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize) {
+void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize, int socket_client) {
     switch (method) {
         case METHOD_GET:
             handleGET(key, keyValStore, res, requestBufferSize);
@@ -16,6 +18,9 @@ void methodHandler(RequestMethod method, const char* key, const char* value, has
             break;
         case METHOD_DELETE:
             handleDELETE(key, keyValStore, res, requestBufferSize);
+            break;
+        case METHOD_QUIT:
+            handleQUIT(res, requestBufferSize, socket_client);
             break;
         default:
             printf("Unknown method\n");
@@ -48,7 +53,7 @@ void handleGET(const char* key, hash_table *keyValStore, char* res, int requestB
         snprintf(res, requestBufferSize, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\r\n", key, value);
     }
 
-    hash_table_print(keyValStore);
+    //hash_table_print(keyValStore);
 }
 
 void handleDELETE(const char* key, hash_table *keyValStore, char* res, int requestBufferSize) {
@@ -61,4 +66,10 @@ void handleDELETE(const char* key, hash_table *keyValStore, char* res, int reque
     }
 
     hash_table_print(keyValStore);
+}
+
+void handleQUIT(char* res, int requestBufferSize, int socket_client) {
+    snprintf(res, requestBufferSize, "Auf Wiedersehen!\r\n");
+    shutdown(socket_client, SHUT_RDWR);
+    close(socket_client);
 }
