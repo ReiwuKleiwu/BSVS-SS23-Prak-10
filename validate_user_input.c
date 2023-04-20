@@ -37,3 +37,19 @@ void removeWhitespaceChars(char* req) {
     }
     *dst = '\0';
 }
+
+bool isControlChar(char c) {
+    return c >= 0 && c <= 31;
+}
+
+void removeControlChars(char *str) {
+    int i = 0, j = 0;
+
+    while (str[i]) {
+        if (!isControlChar(str[i])) {
+            str[j++] = str[i];
+        }
+        i++;
+    }
+    str[j] = '\0';
+}

@@ -6,6 +6,7 @@
 *******************************************************************************/
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -92,6 +93,7 @@ int main() {
 
             char serverResponse[BUFFERSIZE];
 
+            removeControlChars(clientRequest);
             validateFormat(clientRequest, serverResponse);
             requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
 
@@ -110,10 +112,8 @@ int readUntilNewLine(int socket_client, char *buf, int len) {
     int bytes_read;
     char tmp;
 
-    // Ensure the buffer is initially empty
     memset(buf, 0, len);
 
-    // Read data from the client socket until a newline is encountered
     while ((bytes_read = recv(socket_client, &tmp, 1, 0)) > 0 && total_bytes_read < len - 1) {
         if (tmp == '\r') {
             break;
@@ -122,9 +122,7 @@ int readUntilNewLine(int socket_client, char *buf, int len) {
         buf[total_bytes_read++] = tmp;
     }
 
-    // Add null-terminator to the end of the buffer
     buf[total_bytes_read] = '\0';
 
-    // Return the number of bytes read, or -1 if an error occurred
     return bytes_read > 0 ? total_bytes_read : -1;
 }

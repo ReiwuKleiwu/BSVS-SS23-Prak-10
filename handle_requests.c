@@ -14,7 +14,10 @@ RequestMethod stringToRequestMethod(const char* method) {
         return METHOD_PUT;
     } else if (strcmp(method, "DELETE") == 0) {
         return METHOD_DELETE;
-    } else {
+    } else if (strcmp(method, "QUIT") == 0) {
+        return METHOD_QUIT;
+    }
+    else {
         return METHOD_UNKNOWN;
     }
 }
@@ -24,11 +27,8 @@ void requestHandler(char* request, hash_table *keyValStore, char* res, int reque
     char* key = strtok(NULL, ":");
     char* value = strtok(NULL, ":");
 
-    if(!(method && key)) return;
-
-    removeWhitespaceChars(method);
-    removeWhitespaceChars(key);
-
+    if(method) removeWhitespaceChars(method);
+    if(key) removeWhitespaceChars(key);
 
     printf("The method used was : %s\n", method);
     printf("The key requested was: %s\n", key);

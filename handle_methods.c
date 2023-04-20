@@ -4,6 +4,7 @@
 
 #include "handle_methods.h"
 #include <stdio.h>
+#include <string.h>
 #include "hashtable.h"
 #include <sys/socket.h>
 #include <unistd.h>
@@ -30,8 +31,11 @@ void methodHandler(RequestMethod method, const char* key, const char* value, has
 
 void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize) {
     if(value == NULL) {
-        printf("Value was NULL!");
         snprintf(res, requestBufferSize, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
+        return;
+    }
+    if(key == NULL) {
+        snprintf(res, requestBufferSize, "PUT operation: Key is null. Use PUT:KEY:VALUE\r\n");
         return;
     }
 
@@ -41,10 +45,15 @@ void handlePUT(const char* key, const char* value, hash_table *keyValStore, char
         snprintf(res, requestBufferSize, "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\r\n", key, value);
     }
 
-    hash_table_print(keyValStore);
+    //hash_table_print(keyValStore);
 }
 
 void handleGET(const char* key, hash_table *keyValStore, char* res, int requestBufferSize) {
+    if(key == NULL) {
+        snprintf(res, requestBufferSize, "GET operation: Key is null. Use GET:KEY\r\n");
+        return;
+    }
+
     char* value = hash_table_lookup(keyValStore, key);
 
     if(!value) {
@@ -57,6 +66,11 @@ void handleGET(const char* key, hash_table *keyValStore, char* res, int requestB
 }
 
 void handleDELETE(const char* key, hash_table *keyValStore, char* res, int requestBufferSize) {
+    if(key == NULL) {
+        snprintf(res, requestBufferSize, "DELETE operation: Key is null. Use DELETE:KEY\r\n");
+        return;
+    }
+
     const char* deletedValue = hash_table_delete(keyValStore, key);
 
     if(!deletedValue) {
@@ -65,11 +79,12 @@ void handleDELETE(const char* key, hash_table *keyValStore, char* res, int reque
         snprintf(res, requestBufferSize, "DELETE operation: Key: \"%s\", Value: \"%s\" successfully deleted from the store.\r\n", key, deletedValue);
     }
 
-    hash_table_print(keyValStore);
+    //hash_table_print(keyValStore);
 }
 
 void handleQUIT(char* res, int requestBufferSize, int socket_client) {
     snprintf(res, requestBufferSize, "Auf Wiedersehen!\r\n");
+    send(socket_client, res, strlen(res), 0);
     shutdown(socket_client, SHUT_RDWR);
     close(socket_client);
 }
