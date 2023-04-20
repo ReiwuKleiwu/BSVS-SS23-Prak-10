@@ -1,40 +1,19 @@
-/*******************************************************************************
-
-  Ein TCP-Echo-Server als iterativer Server: Der Server schickt einfach die
-  Daten, die der Client schickt, an den Client zurück.
-
-*******************************************************************************/
-
 #include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "hashtable.h"
-#include "handle_requests.h"
-#include "validate_user_input.h"
+#include "socket_server.h"
 
-#define BUFFERSIZE 1024 // Größe des Buffers
 #define PORT 5678
 #define SHOW_LOGS 1
-
-int readUntilNewLine(int socket_client, char *buf, int len);
 
 int main() {
     const int tablesize = (1 << 20);
     hash_table *keyValStore = hash_table_create(tablesize);
 
     int listening_socket; // Rendevouz-Descriptor
-    int client_socket; // Verbindungs-Descriptor
-
-    struct sockaddr_in client; // Socketadresse eines Clients
-    socklen_t client_len; // Länge der Client-Daten
-    char clientRequest[BUFFERSIZE + 1]; // Daten vom Client an den Server
-    int bytes_read; // Anzahl der Bytes, die der Client geschickt hat
-
-
     // Socket erstellen
     listening_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (listening_socket < 0 ){
@@ -42,11 +21,9 @@ int main() {
         exit(-1);
     }
 
-
     // Socket Optionen setzen für schnelles wiederholtes Binden der Adresse
     int option = 1;
     setsockopt(listening_socket, SOL_SOCKET, SO_REUSEADDR, (const void *) &option, sizeof(int));
-
 
     // Socket binden
     struct sockaddr_in server;
@@ -58,7 +35,6 @@ int main() {
         fprintf(stderr, "socket konnte nicht gebunden werden\n");
         exit(-1);
     }
-
 
     // Socket lauschen lassen
     int lrt = listen(listening_socket, 5);
@@ -73,56 +49,8 @@ int main() {
         hash_table_upsert(keyValStore, str, str);
     }
 
-    while(1) {
-        if(SHOW_LOGS) {
-            printf("Waiting for incoming socket connection..\n");
-        }
-
-        // Verbindung eines Clients wird entgegengenommen
-        client_socket = accept(listening_socket, (struct sockaddr *) &client, &client_len);
-
-        if(SHOW_LOGS) {
-            printf("Socket connected to server!\n");
-            const char res[] = "Willkommen: \r\n";
-            send(client_socket, res, strlen(res), 0);
-        }
-        
-        // Daten vom Client empfangen
-        ssize_t received_bytes;
-        while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
-
-            char serverResponse[BUFFERSIZE];
-
-            removeControlChars(clientRequest);
-            validateFormat(clientRequest, serverResponse);
-            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
-
-            // Antwort senden
-            send(client_socket, serverResponse, strlen(serverResponse), 0);
-        }
-        close(client_socket);
-    }
+    handleClientConnections(listening_socket, keyValStore);
 
     // Rendevouz Descriptor schließen
     close(listening_socket);
-}
-
-int readUntilNewLine(int socket_client, char *buf, int len) {
-    int total_bytes_read = 0;
-    int bytes_read;
-    char tmp;
-
-    memset(buf, 0, len);
-
-    while ((bytes_read = recv(socket_client, &tmp, 1, 0)) > 0 && total_bytes_read < len - 1) {
-        if (tmp == '\r') {
-            break;
-        }
-
-        buf[total_bytes_read++] = tmp;
-    }
-
-    buf[total_bytes_read] = '\0';
-
-    return bytes_read > 0 ? total_bytes_read : -1;
 }
