@@ -3,13 +3,14 @@
 //
 
 #include <stdio.h>
-#include "validate_user_input.h"
 #include <string.h>
 #include <ctype.h>
 #include <regex.h>
 #include <stdlib.h>
+#include "validate_user_input.h"
 
 void validateFormat(char* req, char* res) {
+
     regex_t regex;
     int requestREGEX = regcomp(&regex, "^PUT:[^\\s]+:.+|^GET:[^\\s]+|^DELETE:[^\\s]+|^QUIT", 1);
 

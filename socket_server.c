@@ -2,19 +2,18 @@
 // Created by struc on 20.04.2023.
 //
 
-#include "socket_server.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "socket_server.h"
 #include "validate_user_input.h"
 #include "handle_requests.h"
 #include "hashtable.h"
 
-
 #define SHOW_LOGS 1
 #define BUFFERSIZE 1024
 
-void handleClientConnections(int listening_socket, hash_table *keyValStore) {
+void handleClientConnections(int listening_socket, HashTable *keyValStore) {
     int client_socket;
     char clientRequest[BUFFERSIZE + 1];
     struct sockaddr_in client;
@@ -28,24 +27,32 @@ void handleClientConnections(int listening_socket, hash_table *keyValStore) {
 
         client_socket = accept(listening_socket, (struct sockaddr *) &client, &client_len);
 
-        if(SHOW_LOGS) {
-            printf("Socket connected to server!\n");
-            const char res[] = "Willkommen: \r\n";
-            send(client_socket, res, strlen(res), 0);
+        if (fork() == 0) {
+            char *connected = "Willkommen:\r\n";
+            if(SHOW_LOGS) {
+                printf("INFO: client connected\n");
+            }
+            send(client_socket, connected, strlen(connected), 0);
+
+
+            ssize_t received_bytes;
+            while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
+                char serverResponse[BUFFERSIZE];
+
+                removeControlChars(clientRequest);
+                validateFormat(clientRequest, serverResponse);
+                requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
+
+                send(client_socket, serverResponse, strlen(serverResponse), 0);
+            }
+            if(SHOW_LOGS) {
+                printf("INFO: client disconnected\n");
+            }
+
+            break;
+        } else {
+            close(client_socket);
         }
-
-        ssize_t received_bytes;
-        while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
-
-            char serverResponse[BUFFERSIZE];
-
-            removeControlChars(clientRequest);
-            validateFormat(clientRequest, serverResponse);
-            requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
-
-            send(client_socket, serverResponse, strlen(serverResponse), 0);
-        }
-        close(client_socket);
     }
 }
 
