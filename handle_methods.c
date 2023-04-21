@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-void methodHandler(RequestMethod method, const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize, int socket_client) {
+void methodHandler(RequestMethod method, const char* key, const char* value, HashTable *keyValStore, char* res, int requestBufferSize, int socket_client) {
     switch (method) {
         case METHOD_GET:
             handleGET(key, keyValStore, res, requestBufferSize);
@@ -29,7 +29,7 @@ void methodHandler(RequestMethod method, const char* key, const char* value, has
     }
 }
 
-void handlePUT(const char* key, const char* value, hash_table *keyValStore, char* res, int requestBufferSize) {
+void handlePUT(const char* key, const char* value, HashTable *keyValStore, char* res, int requestBufferSize) {
     if(value == NULL) {
         snprintf(res, requestBufferSize, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
         return;
@@ -48,7 +48,7 @@ void handlePUT(const char* key, const char* value, hash_table *keyValStore, char
     //hash_table_print(keyValStore);
 }
 
-void handleGET(const char* key, hash_table *keyValStore, char* res, int requestBufferSize) {
+void handleGET(const char* key, HashTable *keyValStore, char* res, int requestBufferSize) {
     if(key == NULL) {
         snprintf(res, requestBufferSize, "GET operation: Key is null. Use GET:KEY\r\n");
         return;
@@ -65,7 +65,7 @@ void handleGET(const char* key, hash_table *keyValStore, char* res, int requestB
     //hash_table_print(keyValStore);
 }
 
-void handleDELETE(const char* key, hash_table *keyValStore, char* res, int requestBufferSize) {
+void handleDELETE(const char* key, HashTable *keyValStore, char* res, int requestBufferSize) {
     if(key == NULL) {
         snprintf(res, requestBufferSize, "DELETE operation: Key is null. Use DELETE:KEY\r\n");
         return;

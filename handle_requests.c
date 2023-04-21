@@ -22,7 +22,7 @@ RequestMethod stringToRequestMethod(const char* method) {
     }
 }
 
-void requestHandler(char* request, hash_table *keyValStore, char* res, int requestBufferSize, int socket_client) {
+void requestHandler(char* request, HashTable *keyValStore, char* res, int requestBufferSize, int socket_client) {
     char* method = strtok(request, ":");
     char* key = strtok(NULL, ":");
     char* value = strtok(NULL, ":");
