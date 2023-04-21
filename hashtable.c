@@ -9,7 +9,7 @@
 HashTable *create_shared_hashtable(int shm_id) {
     void *shared_mem = shmat(shm_id, NULL, 0);
     if (shared_mem == (void *)-1) {
-        perror("shmat");
+        perror("shmat Fehler aufgetreten");
         return NULL;
     }
     return (HashTable *)shared_mem;
