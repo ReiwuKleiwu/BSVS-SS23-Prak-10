@@ -15,7 +15,7 @@
 int main() {
     int shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
     if (shm_id == -1) {
-        perror("shmget");
+        perror("Das Segment konnte nicht angelegt werden!");
         exit(1);
     }
 
@@ -65,6 +65,7 @@ int main() {
 
     // Rendevouz Descriptor schließen
     close(listening_socket);
+
     destroy_shared_hashtable(shm_id, hash_table);
 
     return 0;
