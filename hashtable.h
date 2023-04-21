@@ -1,21 +1,26 @@
-//
-// Created by struc on 14.04.2023.
-//
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
+#define KEY_SIZE 32
+#define VALUE_SIZE 128
+#define TABLE_SIZE (1 << 20)
 
-#ifndef TESTRM_HASHTABLE_H
-#define TESTRM_HASHTABLE_H
+typedef struct Entry {
+    char key[KEY_SIZE];
+    char value[VALUE_SIZE];
+} Entry;
 
-typedef struct _hash_table hash_table;
+typedef struct HashTable {
+    Entry table[TABLE_SIZE];
+} HashTable;
 
-hash_table *hash_table_create(uint32_t size);
-void hash_table_destroy(hash_table *ht);
-void hash_table_print(hash_table *ht);
-bool hash_table_upsert(hash_table *ht, const char *key, char *value);
-char *hash_table_lookup(hash_table *ht, const char *key);
-char *hash_table_delete(hash_table *ht, const char *key);
+HashTable *create_shared_hashtable(int shm_id);
+void destroy_shared_hashtable(int shm_id, HashTable *hash_table);
 
-#endif //TESTRM_HASHTABLE_H
+unsigned int hash_function(const char *str);
+_Bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value);
+char *hash_table_lookup(HashTable *hash_table, const char *key);
+char *hash_table_delete(HashTable *hash_table, const char *key);
+void hash_table_print(HashTable *hash_table);
+
+#endif // HASHTABLE_H

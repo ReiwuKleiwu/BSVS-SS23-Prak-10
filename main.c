@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <netinet/in.h>
+
 #include "hashtable.h"
 #include "socket_server.h"
 
@@ -10,8 +13,14 @@
 #define SHOW_LOGS 1
 
 int main() {
-    const int tablesize = (1 << 20);
-    hash_table *keyValStore = hash_table_create(tablesize);
+
+    int shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
+    if (shm_id == -1) {
+        perror("shmget");
+        exit(1);
+    }
+
+    HashTable *hash_table = create_shared_hashtable(shm_id);
 
     int listening_socket; // Rendevouz-Descriptor
     // Socket erstellen
@@ -43,14 +52,19 @@ int main() {
         exit(-1);
     }
 
+    /*
     for(int i = 0; i < 1000000; i++) {
         char str[7*4];
         sprintf(str, "%d", i);
-        hash_table_upsert(keyValStore, str, str);
+        hash_table_upsert(hash_table, str, str);
     }
+     */
 
-    handleClientConnections(listening_socket, keyValStore);
+    handleClientConnections(listening_socket, hash_table);
 
     // Rendevouz Descriptor schließen
     close(listening_socket);
+    destroy_shared_hashtable(shm_id, hash_table);
+
+    return 0;
 }

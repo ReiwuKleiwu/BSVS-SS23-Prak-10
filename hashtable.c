@@ -1,26 +1,25 @@
-//
-// Created by struc on 14.04.2023.
-//
-
-#include "hashtable.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
+#include <sys/shm.h>
+#include "hashtable.h"
 
-typedef struct entry {
-    char *key;
-    char *value;
-    struct entry *next;
-} entry;
+HashTable *create_shared_hashtable(int shm_id) {
+    void *shared_mem = shmat(shm_id, NULL, 0);
+    if (shared_mem == (void *)-1) {
+        perror("shmat");
+        return NULL;
+    }
+    return (HashTable *)shared_mem;
+}
 
-struct _hash_table {
-    uint32_t size;
-    entry **elements;
-};
+void destroy_shared_hashtable(int shm_id, HashTable *hash_table) {
+    shmdt(hash_table);
+    shmctl(shm_id, IPC_RMID, NULL);
+}
 
-// Implementation of Murmur hash for 64-bit size_t.
-// https://stackoverflow.com/questions/7666509/hash-function-for-string
 static size_t MurmurOAAT32(const char * key) {
     uint32_t h = 3323198485ul;
     for (;*key;++key) {
@@ -31,119 +30,54 @@ static size_t MurmurOAAT32(const char * key) {
     return h;
 }
 
-static size_t hash_table_index(hash_table *ht, const char* key) {
-    size_t result = MurmurOAAT32(key) % ht->size;
-    return result;
+unsigned int hash_function(const char *str) {
+    size_t hash = MurmurOAAT32(str);
+    return hash % TABLE_SIZE;
 }
 
-hash_table *hash_table_create(uint32_t size) {
-    hash_table *ht = malloc(sizeof(*ht));
-    ht->size = size;
-    ht->elements = calloc(sizeof(entry*), ht->size);
-    return ht;
-}
 
-void hash_table_destroy(hash_table *ht) {
-    //clean up individual elements
-    for(int i = 0; i < ht->size; i++) {
-        while(ht->elements[i]) {
-            entry *tmp = ht->elements[i];
-            ht->elements[i] = ht->elements[i]->next;
-            free(tmp->key);
-            free(tmp->value);
-            free(tmp);
-        }
+_Bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value) {
+    if(key == NULL || value == NULL || hash_table == NULL) return false;
+
+    unsigned int index = hash_function(key);
+    if(strcmp(hash_table->table[index].key, "") != 0) {
+        printf("Achtung, Kollision bei Index %i\n", index);
     }
-
-    free(ht->elements);
-    free(ht);
+    strncpy(hash_table->table[index].key, key, KEY_SIZE);
+    strncpy(hash_table->table[index].value, value, VALUE_SIZE);
+    return true;
 }
 
-void hash_table_print(hash_table *ht) {
+char *hash_table_lookup(HashTable *hash_table, const char *key) {
+    unsigned int index = hash_function(key);
+    if (strncmp(hash_table->table[index].key, key, KEY_SIZE) == 0) {
+        return hash_table->table[index].value;
+    }
+    return NULL;
+}
+
+char *hash_table_delete(HashTable *hash_table, const char *key) {
+    if(key == NULL || hash_table == NULL) return NULL;
+    unsigned int index = hash_function(key);
+
+    if (strncmp(hash_table->table[index].key, key, KEY_SIZE) == 0) {
+        memset(hash_table->table[index].key, 0, KEY_SIZE);
+        memset(hash_table->table[index].value, 0, VALUE_SIZE);
+        return hash_table->table[index].value;
+    }
+    return NULL;
+}
+
+void hash_table_print(HashTable *hash_table) {
     printf("Start Table \n");
-    for(int i = 0; i < ht->size; i++) {
-        if(ht->elements[i] == NULL) continue;
+    for(int i = 0; i < TABLE_SIZE; i++) {
+        if(strcmp(hash_table->table[i].key, "") == 0) continue;
         printf("\tIndex: %i\t\n", i);
-        entry *tmp = ht->elements[i];
-        while(tmp != NULL) {
-            printf("\"%s\":\"%s\" -", tmp->key, tmp->value);
-            tmp = tmp->next;
-        }
+        Entry *tmp = &hash_table->table[i];
+
+        printf("\"%s\":\"%s\"", tmp->key, tmp->value);
+
         printf("\n");
     }
     printf("End Table \n\n");
 }
-
-bool hash_table_upsert(hash_table *ht, const char *key, char *value) {
-    if(key == NULL || value == NULL || ht == NULL) return false;
-    size_t index = hash_table_index(ht, key);
-
-
-    //Update an entry
-    if(hash_table_lookup(ht, key) != NULL) {
-        entry *tmp = ht->elements[index];
-        while(tmp != NULL && strcmp(tmp->key, key) != 0) {
-            tmp = tmp->next;
-        }
-
-        free(tmp->value);
-        tmp->value = strdup(value);
-        return true;
-    }
-
-    //Create new entry
-    entry *e = malloc(sizeof(*e));
-
-    /* strdup offers same functionality in a single expression
-    e->value = malloc(strlen(value) + 1);
-    e->key = malloc(strlen(key) + 1);
-    strcpy(e->key, key);
-    strcpy(e->value, value);
-     */
-
-    e->key = strdup(key);
-    e->value = strdup(value);
-
-    //Insert entry
-    e->next = ht->elements[index];
-    ht->elements[index] = e;
-    return true;
-}
-
-char *hash_table_lookup(hash_table *ht, const char *key) {
-    if(key == NULL || ht == NULL) return NULL;
-    size_t index = hash_table_index(ht, key);
-
-    entry *tmp = ht->elements[index];
-    while(tmp != NULL && strcmp(tmp->key, key) != 0) {
-        tmp = tmp->next;
-    }
-    if(tmp == NULL) return NULL;
-    return tmp->value;
-}
-char *hash_table_delete(hash_table *ht, const char *key){
-    if(key == NULL || ht == NULL) return NULL;
-    size_t index = hash_table_index(ht, key);
-
-    entry *tmp = ht->elements[index];
-    entry *prev = NULL;
-    while(tmp != NULL && strcmp(tmp->key, key) != 0) {
-        prev = tmp;
-        tmp = tmp->next;
-    }
-    if(tmp == NULL) return NULL;
-    if(prev == NULL) {
-        //Delete from head of list
-        ht->elements[index] = tmp->next;
-    } else {
-        // Delete elsewhere
-        prev->next = tmp->next;
-    }
-
-    char *result = tmp->value;
-    free(tmp->key);
-    free(tmp);
-
-    return result;
-}
-
