@@ -3,8 +3,10 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/ipc.h>
 #include "socket_server.h"
 #include "validate_user_input.h"
 #include "handle_requests.h"
@@ -48,8 +50,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore) {
             if(SHOW_LOGS) {
                 printf("INFO: client disconnected\n");
             }
-
-            break;
+            exit(0);
         } else {
             close(client_socket);
         }
