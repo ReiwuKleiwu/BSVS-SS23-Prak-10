@@ -3,11 +3,11 @@
 //
 
 #include <stdio.h>
-#include "validate_user_input.h"
 #include <string.h>
 #include <ctype.h>
 #include <regex.h>
 #include <stdlib.h>
+#include "validate_user_input.h"
 
 void validateFormat(char* req, char* res) {
 

@@ -2,14 +2,13 @@
 // Created by struc on 20.04.2023.
 //
 
-#include "socket_server.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "socket_server.h"
 #include "validate_user_input.h"
 #include "handle_requests.h"
 #include "hashtable.h"
-
 
 #define SHOW_LOGS 1
 #define BUFFERSIZE 1024
@@ -30,11 +29,14 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore) {
 
         if (fork() == 0) {
             char *connected = "Willkommen:\r\n";
-            printf("INFO: client connected\n");
+            if(SHOW_LOGS) {
+                printf("INFO: client connected\n");
+            }
             send(client_socket, connected, strlen(connected), 0);
+
+
             ssize_t received_bytes;
             while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
-
                 char serverResponse[BUFFERSIZE];
 
                 removeControlChars(clientRequest);
@@ -43,7 +45,9 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore) {
 
                 send(client_socket, serverResponse, strlen(serverResponse), 0);
             }
-            printf("INFO: closed disconnected\n");
+            if(SHOW_LOGS) {
+                printf("INFO: client disconnected\n");
+            }
 
             break;
         } else {

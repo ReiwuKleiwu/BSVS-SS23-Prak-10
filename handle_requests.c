@@ -1,11 +1,12 @@
 //
 // Created by struc on 17.04.2023.
 //
+
+#include <string.h>
+#include <stdio.h>
 #include "handle_requests.h"
 #include "validate_user_input.h"
 #include "handle_methods.h"
-#include <string.h>
-#include <stdio.h>
 
 RequestMethod stringToRequestMethod(const char* method) {
     if (strcmp(method, "GET") == 0) {
