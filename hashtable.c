@@ -37,7 +37,7 @@ unsigned int hash_function(const char *str) {
     return hash % TABLE_SIZE;
 }
 
-_Bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value) {
+bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value) {
     if (key == NULL || value == NULL || hash_table == NULL) return false;
 
     unsigned int index = hash_function(key);
