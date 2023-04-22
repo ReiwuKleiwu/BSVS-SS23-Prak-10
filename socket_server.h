@@ -1,7 +1,3 @@
-//
-// Created by struc on 20.04.2023.
-//
-
 #ifndef BSVS_SS23_PRAK_SOCKET_SERVER_H
 #define BSVS_SS23_PRAK_SOCKET_SERVER_H
 

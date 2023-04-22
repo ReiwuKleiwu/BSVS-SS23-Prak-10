@@ -1,7 +1,3 @@
-//
-// Created by struc on 17.04.2023.
-//
-
 #include <string.h>
 #include <stdio.h>
 #include "handle_requests.h"
@@ -23,7 +19,7 @@ RequestMethod stringToRequestMethod(const char* method) {
     }
 }
 
-void requestHandler(char* request, HashTable *keyValStore, char* res, int requestBufferSize, int socket_client) {
+void requestHandler(char* request, HashTable *keyValStore, char* res, int responseBufferSize, int socket_client) {
     char* method = strtok(request, ":");
     char* key = strtok(NULL, ":");
     char* value = strtok(NULL, ":");
@@ -35,5 +31,5 @@ void requestHandler(char* request, HashTable *keyValStore, char* res, int reques
     printf("The key requested was: %s\n", key);
     printf("The value requested was: %s\n", value);
 
-    methodHandler(stringToRequestMethod(method), key, value, keyValStore, res, requestBufferSize, socket_client);
+    methodHandler(stringToRequestMethod(method), key, value, keyValStore, res, responseBufferSize, socket_client);
 }

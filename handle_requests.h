@@ -1,7 +1,3 @@
-//
-// Created by struc on 17.04.2023.
-//
-
 #ifndef BSVS_SS23_PRAK_HANDLE_REQUESTS_H
 #define BSVS_SS23_PRAK_HANDLE_REQUESTS_H
 
@@ -15,7 +11,7 @@ typedef enum {
     METHOD_QUIT
 } RequestMethod;
 
-void requestHandler(char* request, HashTable *keyValStore, char* res, int requestBufferSize, int socket_client);
+void requestHandler(char* request, HashTable *keyValStore, char* res, int responseBufferSize, int socket_client);
 RequestMethod stringToRequestMethod(const char* method);
 
 #endif //BSVS_SS23_PRAK_HANDLE_REQUESTS_H
