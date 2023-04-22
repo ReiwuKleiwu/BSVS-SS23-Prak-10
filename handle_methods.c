@@ -42,7 +42,7 @@ void handlePUT(const char* key, const char* value, HashTable *keyValStore, char*
         snprintf(res, responseBufferSize, "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\r\n", key, value);
     }
 
-    //hash_table_print(keyValStore);
+    hash_table_print(keyValStore);
 }
 
 void handleGET(const char* key, HashTable *keyValStore, char* res, int responseBufferSize) {
@@ -59,7 +59,7 @@ void handleGET(const char* key, HashTable *keyValStore, char* res, int responseB
         snprintf(res, responseBufferSize, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\r\n", key, value);
     }
 
-    //hash_table_print(keyValStore);
+    hash_table_print(keyValStore);
 }
 
 void handleDELETE(const char* key, HashTable *keyValStore, char* res, int responseBufferSize) {
@@ -76,7 +76,7 @@ void handleDELETE(const char* key, HashTable *keyValStore, char* res, int respon
         snprintf(res, responseBufferSize, "DELETE operation: Key: \"%s\" successfully deleted from the store.\r\n", key);
     }
 
-    //hash_table_print(keyValStore);
+    hash_table_print(keyValStore);
 }
 
 void handleQUIT(char* res, int responseBufferSize, int socket_client) {
