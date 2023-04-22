@@ -1,6 +1,7 @@
 #include "handle_methods.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "hashtable.h"
 #include <sys/socket.h>
 #include <unistd.h>
@@ -67,14 +68,12 @@ void handleDELETE(const char* key, HashTable *keyValStore, char* res, int respon
         return;
     }
 
-    const char* deletedValue = hash_table_delete(keyValStore, key);
+    bool deleted = hash_table_delete(keyValStore, key);
 
-    printf("%s\n", deletedValue);
-
-    if(!deletedValue) {
+    if(!deleted) {
         snprintf(res, responseBufferSize, "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\r\n", key);
     } else {
-        snprintf(res, responseBufferSize, "DELETE operation: Key: \"%s\", Value: \"%s\" successfully deleted from the store.\r\n", key, deletedValue);
+        snprintf(res, responseBufferSize, "DELETE operation: Key: \"%s\" successfully deleted from the store.\r\n", key);
     }
 
     //hash_table_print(keyValStore);

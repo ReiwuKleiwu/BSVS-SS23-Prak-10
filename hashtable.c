@@ -73,17 +73,16 @@ char *hash_table_lookup(HashTable *hash_table, const char *key) {
     return NULL;
 }
 
-char *hash_table_delete(HashTable *hash_table, const char *key) {
+bool hash_table_delete(HashTable *hash_table, const char *key) {
     if (key == NULL || hash_table == NULL) return NULL;
     unsigned int index = hash_function(key);
     unsigned int original_index = index;
 
     while (strcmp(hash_table->table[index].key, "") != 0) {
         if (strncmp(hash_table->table[index].key, key, KEY_SIZE) == 0) {
-            char* deletedValue = hash_table->table[index].value;
             memset(hash_table->table[index].key, 0, KEY_SIZE);
             memset(hash_table->table[index].value, 0, VALUE_SIZE);
-            return deletedValue;
+            return true;
         }
 
         index = (index + 1) % TABLE_SIZE;
