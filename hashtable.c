@@ -11,7 +11,7 @@ static int collisions = 0;
 HashTable *create_shared_hashtable(int shm_id) {
     void *shared_mem = shmat(shm_id, NULL, 0);
     if (shared_mem == (void *) -1) {
-        perror("shmat Fehler aufgetreten");
+        perror("shmat error occurred");
         return NULL;
     }
     return (HashTable *) shared_mem;
@@ -106,5 +106,5 @@ void hash_table_print(HashTable *hash_table) {
 }
 
 void hash_table_print_collisions(HashTable *hash_table) {
-    printf("Es gab %d Kollisionen.\n", collisions);
+    printf("You got %d Collisions.\n", collisions);
 }

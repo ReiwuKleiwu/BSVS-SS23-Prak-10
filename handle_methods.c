@@ -80,7 +80,7 @@ void handleDELETE(const char* key, HashTable *keyValStore, char* res, int respon
 }
 
 void handleQUIT(char* res, int responseBufferSize, int socket_client) {
-    snprintf(res, responseBufferSize, "Auf Wiedersehen!\r\n");
+    snprintf(res, responseBufferSize, "See you soon!\r\n");
     send(socket_client, res, strlen(res), 0);
     shutdown(socket_client, SHUT_RDWR);
     close(socket_client);

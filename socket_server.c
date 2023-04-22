@@ -26,7 +26,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore) {
         client_socket = accept(listening_socket, (struct sockaddr *) &client, &client_len);
 
         if (fork() == 0) {
-            char *connected = "Willkommen:\r\n";
+            char *connected = "Welcome:\r\n";
             if(SHOW_LOGS) {
                 printf("INFO: client connected\n");
             }

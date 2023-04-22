@@ -15,7 +15,7 @@
 int main() {
     int shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
     if (shm_id == -1) {
-        perror("Das Segment konnte nicht angelegt werden!");
+        perror("The segment could not be created!");
         exit(1);
     }
 
@@ -26,7 +26,7 @@ int main() {
     // Socket erstellen
     listening_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (listening_socket < 0) {
-        fprintf(stderr, "Socket konnte nicht erstellt werden\n");
+        fprintf(stderr, "Socket could not be created\n");
         exit(-1);
     }
 
@@ -41,14 +41,14 @@ int main() {
     server.sin_port = htons(PORT);
     int bind_result = bind(listening_socket, (struct sockaddr *) &server, sizeof(server));
     if (bind_result < 0) {
-        fprintf(stderr, "Socket konnte nicht gebunden werden\n");
+        fprintf(stderr, "Socket could not be bound!\n");
         exit(-1);
     }
 
     // Socket lauschen lassen
     int lrt = listen(listening_socket, 5);
     if (lrt < 0) {
-        fprintf(stderr, "Socket konnte nicht listen gesetzt werden\n");
+        fprintf(stderr, "Socket could not be set to listen\n");
         exit(-1);
     }
 

@@ -18,7 +18,7 @@ void validateFormat(char* req, char* res) {
     int requestREGEXTest = regexec(&regex, req, 0, NULL, 0);
 
     if(requestREGEXTest) {
-        strcpy(res, "Der Befehl muss mit PUT:, GET: oder DELETE: beginnen und das richtige Format haben. \r\n");
+        strcpy(res, "The command must start with PUT:, GET:, or DELETE: and be in the correct format. \r\n");
     }
 
     regfree(&regex);
