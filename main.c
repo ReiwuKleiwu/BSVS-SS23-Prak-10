@@ -52,14 +52,6 @@ int main() {
         exit(-1);
     }
 
-    /*
-    for(int i = 0; i < 1000000; i++) {
-        char str[7*4];
-        sprintf(str, "%d", i);
-        hash_table_upsert(hash_table, str, str);
-    }
-     */
-
     // Warten auf Verbindungen
     handleClientConnections(listening_socket, hash_table);
 
