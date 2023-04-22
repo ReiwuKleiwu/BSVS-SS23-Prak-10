@@ -57,6 +57,8 @@ bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value
 }
 
 char *hash_table_lookup(HashTable *hash_table, const char *key) {
+    if (hash_table == NULL || key == NULL) return NULL;
+
     unsigned int index = hash_function(key);
     unsigned int original_index = index;
 
