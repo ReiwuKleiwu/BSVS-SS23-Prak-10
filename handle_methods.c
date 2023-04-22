@@ -69,6 +69,8 @@ void handleDELETE(const char* key, HashTable *keyValStore, char* res, int respon
 
     const char* deletedValue = hash_table_delete(keyValStore, key);
 
+    printf("%s\n", deletedValue);
+
     if(!deletedValue) {
         snprintf(res, responseBufferSize, "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\r\n", key);
     } else {

@@ -78,9 +78,10 @@ char *hash_table_delete(HashTable *hash_table, const char *key) {
 
     while (strcmp(hash_table->table[index].key, "") != 0) {
         if (strncmp(hash_table->table[index].key, key, KEY_SIZE) == 0) {
+            char* deletedValue = hash_table->table[index].value;
             memset(hash_table->table[index].key, 0, KEY_SIZE);
             memset(hash_table->table[index].value, 0, VALUE_SIZE);
-            return hash_table->table[index].value;
+            return deletedValue;
         }
 
         index = (index + 1) % TABLE_SIZE;
