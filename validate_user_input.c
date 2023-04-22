@@ -1,7 +1,3 @@
-//
-// Created by struc on 17.04.2023.
-//
-
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -39,18 +35,15 @@ void removeWhitespaceChars(char* req) {
     *dst = '\0';
 }
 
-bool isControlChar(char c) {
-    return c >= 0 && c <= 31;
-}
-
-void removeControlChars(char *str) {
+void sanitizeUserInput(char *str) {
     int i = 0, j = 0;
 
-    while (str[i]) {
-        if (!isControlChar(str[i])) {
+    while(str[i]) {
+        if(!(str[i] == '\n' || str[i] == '\r')) {
             str[j++] = str[i];
         }
         i++;
     }
+
     str[j] = '\0';
 }

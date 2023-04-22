@@ -41,7 +41,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore) {
             while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
                 char serverResponse[BUFFERSIZE];
 
-                removeControlChars(clientRequest);
+                sanitizeUserInput(clientRequest);
                 validateFormat(clientRequest, serverResponse);
                 requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
 
