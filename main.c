@@ -7,19 +7,23 @@
 #include <netinet/in.h>
 
 #include "hashtable.h"
+#include "subStore.h"
 #include "socket_server.h"
 
 #define PORT 5678
 #define SHOW_LOGS 1
 
 int main() {
-    int shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
-    if (shm_id == -1) {
+    int hashtable_shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
+    int sub_store_shm_id = shmget(IPC_PRIVATE, sizeof(SubStore), 0644 | IPC_CREAT);
+    if (hashtable_shm_id == -1 || sub_store_shm_id == -1) {
         perror("The segment could not be created!");
         exit(1);
     }
 
-    HashTable *hash_table = create_shared_hashtable(shm_id);
+    HashTable *hash_table = create_shared_hashtable(hashtable_shm_id);
+    SubStore *sub_store = create_shared_sub_store(sub_store_shm_id);
+
 
     int listening_socket; // Rendevouz-Descriptor
 
@@ -53,12 +57,13 @@ int main() {
     }
 
     // Warten auf Verbindungen
-    handleClientConnections(listening_socket, hash_table);
+    handleClientConnections(listening_socket, hash_table, sub_store);
 
     // Rendevouz Descriptor schließen
     close(listening_socket);
 
-    destroy_shared_hashtable(shm_id, hash_table);
+    destroy_shared_hashtable(hashtable_shm_id, hash_table);
+    destroy_shared_sub_store(sub_store_shm_id, sub_store);
 
     return 0;
 }
