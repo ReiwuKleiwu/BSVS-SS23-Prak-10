@@ -22,9 +22,8 @@ RequestMethod stringToRequestMethod(const char *method) {
     }
 }
 
-void requestHandler(char *request, HashTable *keyValStore, SubStore *subStore, char *res, int responseBufferSize,
-                    int socket_client) {
-    char *method = strtok(request, ":");
+void requestHandler(Request client_request) {
+    char *method = strtok(client_request.body, ":");
     char *key = strtok(NULL, ":");
     char *value = strtok(NULL, ":");
 
@@ -35,6 +34,5 @@ void requestHandler(char *request, HashTable *keyValStore, SubStore *subStore, c
     printf("The key requested was: %s\n", key);
     printf("The value requested was: %s\n", value);
 
-    methodHandler(stringToRequestMethod(method), key, value, keyValStore, subStore, res, responseBufferSize,
-                  socket_client);
+    methodHandler(stringToRequestMethod(method), key, value, client_request);
 }

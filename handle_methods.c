@@ -6,26 +6,25 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-void methodHandler(RequestMethod method, const char *key, const char *value, HashTable *keyValStore, SubStore *subStore,
-                   char *res, int responseBufferSize, int socket_client) {
+void methodHandler(RequestMethod method, const char *key, const char *value, Request client_request) {
     switch (method) {
         case METHOD_GET:
-            handleGET(key, keyValStore, res, responseBufferSize);
+            handleGET(key, client_request);
             break;
         case METHOD_PUT:
-            handlePUT(key, value, keyValStore, res, responseBufferSize);
+            handlePUT(key, value, client_request);
             break;
         case METHOD_DELETE:
-            handleDELETE(key, keyValStore, res, responseBufferSize);
+            handleDELETE(key, client_request);
             break;
         case METHOD_QUIT:
-            handleQUIT(res, responseBufferSize, socket_client);
+            handleQUIT(client_request);
             break;
         case METHOD_SUB:
-            handleSUB(key, subStore, res, responseBufferSize);
+            handleSUB(key, client_request);
             break;
         case METHOD_UNSUB:
-            handleUNSUB(key, subStore, res, responseBufferSize);
+            handleUNSUB(key, client_request);
             break;
         default:
             printf("Unknown method\n");
@@ -33,88 +32,86 @@ void methodHandler(RequestMethod method, const char *key, const char *value, Has
     }
 }
 
-void handlePUT(const char *key, const char *value, HashTable *keyValStore, char *res, int responseBufferSize) {
+void handlePUT(const char *key, const char *value, Request client_request) {
     if (value == NULL) {
-        snprintf(res, responseBufferSize, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
+        snprintf(client_request.response, RESPONSESIZE, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
         return;
     }
     if (key == NULL) {
-        snprintf(res, responseBufferSize, "PUT operation: Key is null. Use PUT:KEY:VALUE\r\n");
+        snprintf(client_request.response, RESPONSESIZE, "PUT operation: Key is null. Use PUT:KEY:VALUE\r\n");
         return;
     }
 
-    if (hash_table_upsert(keyValStore, key, value)) {
-        snprintf(res, responseBufferSize,
+    if (hash_table_upsert(client_request.key_value_store, key, value)) {
+        snprintf(client_request.response, RESPONSESIZE,
                  "PUT operation: Key: \"%s\", Value: \"%s\" successfully inserted/updated.\r\n", key, value);
     } else {
-        snprintf(res, responseBufferSize,
+        snprintf(client_request.response, RESPONSESIZE,
                  "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\r\n", key, value);
     }
 
-    hash_table_print(keyValStore);
+    hash_table_print(client_request.key_value_store);
+    send_response(client_request);
 }
 
-void handleGET(const char *key, HashTable *keyValStore, char *res, int responseBufferSize) {
+void handleGET(const char *key, Request client_request) {
     if (key == NULL) {
-        snprintf(res, responseBufferSize, "GET operation: Key is null. Use GET:KEY\r\n");
+        snprintf(client_request.response, RESPONSESIZE, "GET operation: Key is null. Use GET:KEY\r\n");
         return;
     }
 
-    char *value = hash_table_lookup(keyValStore, key);
+    char *value = hash_table_lookup(client_request.key_value_store, key);
 
     if (!value) {
-        snprintf(res, responseBufferSize, "GET operation: Key: \"%s\" not found in the store.\r\n", key);
+        snprintf(client_request.response, RESPONSESIZE, "GET operation: Key: \"%s\" not found in the store.\r\n", key);
     } else {
-        snprintf(res, responseBufferSize, "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\r\n", key,
+        snprintf(client_request.response, RESPONSESIZE,
+                 "GET operation: Key: \"%s\", Value: \"%s\" found in the store.\r\n", key,
                  value);
     }
 
-    hash_table_print(keyValStore);
+    hash_table_print(client_request.key_value_store);
+    send_response(client_request);
 }
 
-void handleDELETE(const char *key, HashTable *keyValStore, char *res, int responseBufferSize) {
+void handleDELETE(const char *key, Request client_request) {
     if (key == NULL) {
-        snprintf(res, responseBufferSize, "DELETE operation: Key is null. Use DELETE:KEY\r\n");
+        snprintf(client_request.response, RESPONSESIZE, "DELETE operation: Key is null. Use DELETE:KEY\r\n");
         return;
     }
 
-    bool deleted = hash_table_delete(keyValStore, key);
+    bool deleted = hash_table_delete(client_request.key_value_store, key);
 
     if (!deleted) {
-        snprintf(res, responseBufferSize,
+        snprintf(client_request.response, RESPONSESIZE,
                  "DELETE operation: Key: \"%s\" not found in the store. No deletion occurred.\r\n", key);
     } else {
-        snprintf(res, responseBufferSize, "DELETE operation: Key: \"%s\" successfully deleted from the store.\r\n",
+        snprintf(client_request.response, RESPONSESIZE,
+                 "DELETE operation: Key: \"%s\" successfully deleted from the store.\r\n",
                  key);
     }
 
-    hash_table_print(keyValStore);
+    hash_table_print(client_request.key_value_store);
+    send_response(client_request);
 }
 
-void handleSUB(const char *key, SubStore *subStore, char *res, int responseBufferSize) {
-
-    for(int i = 0; i < 3; i++) {
-        char str[2];
-        sprintf(str, "%d", i);
-        sub_store_upsert(subStore, key, str);
-    }
-
-    sub_store_upsert(subStore, key, "1234");
-    sub_store_print(subStore);
-    snprintf(res, responseBufferSize, "Amogus.\r\n");
-
+void handleSUB(const char *key, Request client_request) {
+    sub_store_upsert(client_request.subscriber_store, key, client_request.client_pid);
+    sub_store_print(client_request.subscriber_store);
+    snprintf(client_request.response, RESPONSESIZE, "Subscribed.\r\n");
+    send_response(client_request);
 }
 
-void handleUNSUB(const char *key, SubStore *subStore, char *res, int responseBufferSize) {
-    sub_store_delete(subStore, key, "1234");
-    sub_store_print(subStore);
-    snprintf(res, responseBufferSize, "Amogus.\r\n");
+void handleUNSUB(const char *key, Request client_request) {
+    sub_store_delete(client_request.subscriber_store, key, client_request.client_pid);
+    sub_store_print(client_request.subscriber_store);
+    snprintf(client_request.response, RESPONSESIZE, "Unsubscribed.\r\n");
+    send_response(client_request);
 }
 
-
-void handleQUIT(char *res, int responseBufferSize, int socket_client) {
-    snprintf(res, responseBufferSize, "See you soon!\r\n");
-    send(socket_client, res, strlen(res), 0);
-    shutdown(socket_client, SHUT_RDWR);
-    close(socket_client);
+void handleQUIT(Request client_request) {
+    snprintf(client_request.response, RESPONSESIZE, "See you soon!\r\n");
+    send(client_request.client_socket, client_request.response, RESPONSESIZE, 0);
+    shutdown(client_request.client_socket, SHUT_RDWR);
+    close(client_request.client_socket);
 }

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "validate_user_input.h"
 
-void validateFormat(char* req, char* res) {
+void validateFormat(Request client_request) {
 
     regex_t regex;
     int requestREGEX = regcomp(&regex, "^PUT:[^\\s]+:.+|^GET:[^\\s]+|^DELETE:[^\\s]+|^QUIT|^SUB:[^\\s]+|^UNSUB:[^\\s]+", 1);
@@ -15,19 +15,20 @@ void validateFormat(char* req, char* res) {
         exit(-1);
     }
 
-    int requestREGEXTest = regexec(&regex, req, 0, NULL, 0);
+    int requestREGEXTest = regexec(&regex, client_request.body, 0, NULL, 0);
 
     if(requestREGEXTest) {
-        strcpy(res, "The command must start with PUT:, GET:, or DELETE: and be in the correct format. \r\n");
+        strcpy(client_request.response, "The command must start with PUT:, GET:, DELETE:, QUIT, SUB: or UNSUB: and be in the correct format. \r\n");
     }
 
     regfree(&regex);
+    send_response(client_request);
 }
 
 
-void removeWhitespaceChars(char* req) {
+void removeWhitespaceChars(char* str) {
     char *src, *dst;
-    for (src = dst = req; *src != '\0'; src++) {
+    for (src = dst = str; *src != '\0'; src++) {
         if (!isspace(*src)) {
             *dst++ = *src;
         }

@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 
 #include "hashtable.h"
-#include "subStore.h"
+#include "sub_store.h"
 #include "socket_server.h"
 
 #define PORT 5678

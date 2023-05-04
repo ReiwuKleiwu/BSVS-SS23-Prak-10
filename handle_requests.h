@@ -2,7 +2,8 @@
 #define BSVS_SS23_PRAK_HANDLE_REQUESTS_H
 
 #include "hashtable.h"
-#include "subStore.h"
+#include "sub_store.h"
+#include "request.h"
 
 typedef enum {
     METHOD_UNKNOWN = 0,
@@ -14,7 +15,7 @@ typedef enum {
     METHOD_QUIT
 } RequestMethod;
 
-void requestHandler(char* request, HashTable *keyValStore, SubStore *subStore, char* res, int responseBufferSize, int socket_client);
+void requestHandler(Request client_request);
 RequestMethod stringToRequestMethod(const char* method);
 
 #endif //BSVS_SS23_PRAK_HANDLE_REQUESTS_H

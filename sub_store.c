@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <sys/shm.h>
-#include "subStore.h"
+#include "sub_store.h"
 
 
 static int collisions = 0;
@@ -15,7 +15,6 @@ SubStore *create_shared_sub_store(int shm_id) {
         perror("shmat Fehler aufgetreten");
         return NULL;
     }
-
     return (SubStore *) shared_mem;
 }
 
@@ -39,13 +38,19 @@ unsigned int hash_function2(const char *str) {
     return hash % TABLE_SIZE;
 }
 
-bool sub_store_upsert(SubStore *sub_store, const char *key, const char *value) {
+bool sub_store_upsert(SubStore *sub_store, const char *key, int value) {
     if (key == NULL || value == NULL || sub_store == NULL) return false;
 
     unsigned int index = hash_function2(key);
     unsigned int original_index = index;
 
-    if (strcmp(sub_store->table[index].key, "") != 0) collisions++;
+    if (strcmp(sub_store->table[index].key, "") == 0) {
+        for (int i = 0; i < MAX_SUBSCRIBER_COUNT; i++) {
+            sub_store->table[index].subscriber[i].pid = -1;
+        }
+    } else {
+        collisions++;
+    }
 
     while (strcmp(sub_store->table[index].key, "") != 0 &&
            strncmp(sub_store->table[index].key, key, KEY_SIZE) != 0) {
@@ -54,19 +59,19 @@ bool sub_store_upsert(SubStore *sub_store, const char *key, const char *value) {
     }
 
     Subscriber tmpSub;
-    strncpy(tmpSub.pid, value, strlen(value));
+    tmpSub.pid = value;
 
     strncpy(sub_store->table[index].key, key, KEY_SIZE);
 
     for (int i = 0; i < MAX_SUBSCRIBER_COUNT; i++) {
-        if (strcmp(sub_store->table[index].subscriber[i].pid, value) == 0) {
+        if (sub_store->table[index].subscriber[i].pid == value) {
             return false; // Already subscribed to event
         }
     }
 
 
     for (int i = 0; i < MAX_SUBSCRIBER_COUNT; i++) {
-        if (strcmp(sub_store->table[index].subscriber[i].pid, "") == 0) {
+        if (sub_store->table[index].subscriber[i].pid == -1) {
             sub_store->table[index].subscriber[i] = tmpSub;
             return true;
         }
@@ -94,7 +99,7 @@ Subscriber *sub_store_lookup(SubStore *sub_store, const char *key) {
     return NULL;
 }
 
-bool sub_store_delete(SubStore *sub_store, const char *key, const char *value) {
+bool sub_store_delete(SubStore *sub_store, const char *key, int value) {
     if (key == NULL || sub_store == NULL) return NULL;
     unsigned int index = hash_function2(key);
     unsigned int original_index = index;
@@ -103,15 +108,15 @@ bool sub_store_delete(SubStore *sub_store, const char *key, const char *value) {
         if (strncmp(sub_store->table[index].key, key, KEY_SIZE) == 0) {
 
             for (int i = 0; i < MAX_SUBSCRIBER_COUNT; i++) {
-                if (strcmp(sub_store->table[index].subscriber[i].pid, value) == 0) {
-                    strncpy(sub_store->table[index].subscriber[i].pid, "", PID_SIZE);
+                if (sub_store->table[index].subscriber[i].pid == value) {
+                    sub_store->table[index].subscriber[i].pid = -1;
                 }
             }
 
             bool isEmpty = true;
 
             for (int i = 0; i < MAX_SUBSCRIBER_COUNT; i++) {
-                if (strcmp(sub_store->table[index].subscriber[i].pid, "") != 0) {
+                if (sub_store->table[index].subscriber[i].pid != -1) {
                     isEmpty = false;
                     break;
                 }
@@ -141,8 +146,8 @@ void sub_store_print(SubStore *sub_store) {
         printf("\"%s\": [ ", tmp->key);
 
         for (int j = 0; j < MAX_SUBSCRIBER_COUNT; j++) {
-            if (strcmp(tmp->subscriber[j].pid, "") != 0) {
-                printf("\"%s\" ", tmp->subscriber[j].pid);
+            if (tmp->subscriber[j].pid != -1) {
+                printf("\"%d\" ", tmp->subscriber[j].pid);
             }
         }
 

@@ -7,7 +7,8 @@
 #include "validate_user_input.h"
 #include "handle_requests.h"
 #include "hashtable.h"
-#include "subStore.h"
+#include "sub_store.h"
+#include "request.h"
 
 #define SHOW_LOGS 1
 #define BUFFERSIZE 1024
@@ -17,6 +18,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
     char clientRequest[BUFFERSIZE + 1];
     struct sockaddr_in client;
     socklen_t client_len;
+
 
 
     while(1) {
@@ -34,16 +36,24 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
             send(client_socket, connected, strlen(connected), 0);
 
 
-            ssize_t received_bytes;
-            while ((received_bytes = readUntilNewLine(client_socket, clientRequest, BUFFERSIZE)) > 0) {
-                char serverResponse[BUFFERSIZE];
+            int pid = getpid();
 
-                sanitizeUserInput(clientRequest);
-                validateFormat(clientRequest, serverResponse);
-                requestHandler(clientRequest, keyValStore, subStore, serverResponse, BUFFERSIZE, client_socket);
+            printf("Process ID: %d\n", pid);
 
-                send(client_socket, serverResponse, strlen(serverResponse), 0);
+            ssize_t received_client_bytes;
+            while ((received_client_bytes = readUntilNewLine(client_socket, client_request_buffer, BUFFERSIZE)) > 0) {
+                Request client_request;
+                strncpy(client_request.body, client_request_buffer, strlen(client_request_buffer));
+                client_request.key_value_store = keyValStore;
+                client_request.subscriber_store = subStore;
+                client_request.client_socket = client_socket;
+                client_request.client_pid = getpid();
+
+                sanitizeUserInput(client_request.body);
+                validateFormat(client_request);
+                requestHandler(client_request);
             }
+
             if(SHOW_LOGS) {
                 printf("INFO: client disconnected\n");
             }

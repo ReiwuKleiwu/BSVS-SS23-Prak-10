@@ -3,7 +3,7 @@
 
 #include <netinet/in.h>
 #include "hashtable.h"
-#include "subStore.h"
+#include "sub_store.h"
 
 void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore);
 int readUntilNewLine(int socket_client, char *buf, int len);
