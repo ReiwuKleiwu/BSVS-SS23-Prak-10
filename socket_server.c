@@ -15,7 +15,7 @@
 
 void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore) {
     int client_socket;
-    char clientRequest[BUFFERSIZE + 1];
+    char client_request_buffer[BUFFERSIZE];
     struct sockaddr_in client;
     socklen_t client_len;
 
