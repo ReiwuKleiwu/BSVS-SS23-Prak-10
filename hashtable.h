@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <semaphore.h>
+
 
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
@@ -14,6 +16,7 @@ typedef struct Entry {
 
 typedef struct HashTable {
     Entry table[TABLE_SIZE];
+    sem_t lock;
 } HashTable;
 
 HashTable *create_shared_hashtable(int shm_id);
