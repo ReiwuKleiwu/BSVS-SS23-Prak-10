@@ -7,11 +7,12 @@
 #include "validate_user_input.h"
 #include "handle_requests.h"
 #include "hashtable.h"
+#include "subStore.h"
 
 #define SHOW_LOGS 1
 #define BUFFERSIZE 1024
 
-void handleClientConnections(int listening_socket, HashTable *keyValStore) {
+void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore) {
     int client_socket;
     char clientRequest[BUFFERSIZE + 1];
     struct sockaddr_in client;
@@ -39,7 +40,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore) {
 
                 sanitizeUserInput(clientRequest);
                 validateFormat(clientRequest, serverResponse);
-                requestHandler(clientRequest, keyValStore, serverResponse, BUFFERSIZE, client_socket);
+                requestHandler(clientRequest, keyValStore, subStore, serverResponse, BUFFERSIZE, client_socket);
 
                 send(client_socket, serverResponse, strlen(serverResponse), 0);
             }
