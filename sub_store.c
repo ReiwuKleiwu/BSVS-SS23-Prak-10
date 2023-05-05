@@ -33,7 +33,7 @@ static size_t MurmurOAAT32(const char *key) {
     return h;
 }
 
-unsigned int hash_function2(const char *str) {
+static unsigned int hash_function(const char *str) {
     size_t hash = MurmurOAAT32(str);
     return hash % TABLE_SIZE;
 }
@@ -41,7 +41,7 @@ unsigned int hash_function2(const char *str) {
 bool sub_store_upsert(SubStore *sub_store, const char *key, int value) {
     if (key == NULL || value == NULL || sub_store == NULL) return false;
 
-    unsigned int index = hash_function2(key);
+    unsigned int index = hash_function(key);
     unsigned int original_index = index;
 
     if (strcmp(sub_store->table[index].key, "") == 0) {
@@ -85,7 +85,7 @@ bool sub_store_upsert(SubStore *sub_store, const char *key, int value) {
 Subscriber *sub_store_lookup(SubStore *sub_store, const char *key) {
     if (sub_store == NULL || key == NULL) return NULL;
 
-    unsigned int index = hash_function2(key);
+    unsigned int index = hash_function(key);
     unsigned int original_index = index;
 
     while (strcmp(sub_store->table[index].key, "") != 0) {
@@ -101,7 +101,7 @@ Subscriber *sub_store_lookup(SubStore *sub_store, const char *key) {
 
 bool sub_store_delete(SubStore *sub_store, const char *key, int value) {
     if (key == NULL || sub_store == NULL) return NULL;
-    unsigned int index = hash_function2(key);
+    unsigned int index = hash_function(key);
     unsigned int original_index = index;
 
     while (strcmp(sub_store->table[index].key, "") != 0) {

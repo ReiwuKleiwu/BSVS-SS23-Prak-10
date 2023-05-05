@@ -98,14 +98,14 @@ void handleDELETE(const char *key, Request client_request) {
 void handleSUB(const char *key, Request client_request) {
     sub_store_upsert(client_request.subscriber_store, key, client_request.client_pid);
     sub_store_print(client_request.subscriber_store);
-    snprintf(client_request.response, RESPONSESIZE, "Subscribed.\r\n");
+    snprintf(client_request.response, RESPONSESIZE, "Successfully subscribed to key \"%s\".\r\n", key);
     send_response(client_request);
 }
 
 void handleUNSUB(const char *key, Request client_request) {
     sub_store_delete(client_request.subscriber_store, key, client_request.client_pid);
     sub_store_print(client_request.subscriber_store);
-    snprintf(client_request.response, RESPONSESIZE, "Unsubscribed.\r\n");
+    snprintf(client_request.response, RESPONSESIZE, "Successfully unsubscribed from key \"%s\".\r\n", key);
     send_response(client_request);
 }
 

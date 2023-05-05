@@ -35,7 +35,7 @@ static size_t MurmurOAAT32(const char *key) {
     return h;
 }
 
-unsigned int hash_function(const char *str) {
+static unsigned int hash_function(const char *str) {
     size_t hash = MurmurOAAT32(str);
     return hash % TABLE_SIZE;
 }

@@ -21,7 +21,6 @@ typedef struct HashTable {
 
 HashTable *create_shared_hashtable(int shm_id);
 void destroy_shared_hashtable(int shm_id, HashTable *hash_table);
-unsigned int hash_function(const char *str);
 bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value);
 char *hash_table_lookup(HashTable *hash_table, const char *key);
 bool hash_table_delete(HashTable *hash_table, const char *key);
