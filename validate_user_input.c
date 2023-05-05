@@ -8,7 +8,7 @@
 void validateFormat(Request client_request) {
 
     regex_t regex;
-    int requestREGEX = regcomp(&regex, "^PUT:[^\\s]+:.+|^GET:[^\\s]+|^DELETE:[^\\s]+|^QUIT|^SUB:[^\\s]+|^UNSUB:[^\\s]+", 1);
+    int requestREGEX = regcomp(&regex, "^(((GET|DELETE|SUB|UNSUB):(\\S*))|((PUT):(\\S*):(\\w|\\d|\\s)*)|QUIT)$", 1);
 
     if(requestREGEX) {
         fprintf(stderr, "Could not compile regex\n");
