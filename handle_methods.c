@@ -111,7 +111,7 @@ void handleUNSUB(const char *key, Request client_request) {
 
 void handleQUIT(Request client_request) {
     snprintf(client_request.response, RESPONSESIZE, "See you soon!\r\n");
-    send(client_request.client_socket, client_request.response, RESPONSESIZE, 0);
+    send(client_request.client_socket, client_request.response, strlen(client_request.response), 0);
     shutdown(client_request.client_socket, SHUT_RDWR);
     close(client_request.client_socket);
 }
