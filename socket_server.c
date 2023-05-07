@@ -82,6 +82,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
 
         client_socket = accept(listening_socket, (struct sockaddr *) &client, &client_len);
 
+
         if (fork() == 0) {
             char *connected = "Welcome:\r\n";
             if (SHOW_LOGS) {
@@ -93,7 +94,6 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
 
             ssize_t received_client_bytes;
             while ((received_client_bytes = readUntilNewLine(client_socket, client_request_buffer, BUFFERSIZE)) > 0) {
-                read_new_messages(sub_queue_id, pid);
 
                 Request client_request;
                 memset(client_request.body, 0, strlen(client_request.body));
@@ -108,6 +108,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
                 sanitizeUserInput(client_request.body);
                 validateFormat(client_request);
                 requestHandler(client_request);
+                send_new_notifications(sub_queue_id);
             }
 
             if (SHOW_LOGS) {

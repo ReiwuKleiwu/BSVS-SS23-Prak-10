@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <sys/socket.h>
 
 int create_sub_message_queue(int key) {
     int queue_id = msgget(key, IPC_CREAT | 0644);
@@ -31,10 +32,15 @@ void notify_on_event(int queue_id, SubStore *sub_store, char *notify_payload, ch
     }
 }
 
-void read_new_messages(int queue_id, int type) {
-    message tmp_message;
-    msgrcv(queue_id, &tmp_message, MAX_PAYLOAD_SIZE, type, IPC_NOWAIT);
-    printf("Message: %s\n", tmp_message.payload);
+void send_new_notifications(int queue_id) {
+    printf("Sending notifications to clients...\n");
+    while(1) {
+        message tmp_message;
+        int received_bytes = msgrcv(queue_id, &tmp_message, MAX_PAYLOAD_SIZE, -100, IPC_NOWAIT);
+
+        if(received_bytes == -1) return;
+        send(tmp_message.type, tmp_message.payload, strlen(tmp_message.payload), 0);
+    }
 }
 
 
