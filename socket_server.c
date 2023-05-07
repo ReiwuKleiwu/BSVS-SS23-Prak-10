@@ -88,6 +88,8 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
             ssize_t received_client_bytes;
             while ((received_client_bytes = readUntilNewLine(client_socket, client_request_buffer, BUFFERSIZE)) > 0) {
                 Request client_request;
+                memset(client_request.body,0,strlen(client_request.body));
+                memset(client_request.response,0,strlen(client_request.response));
                 strncpy(client_request.body, client_request_buffer, strlen(client_request_buffer));
                 client_request.key_value_store = keyValStore;
                 client_request.subscriber_store = subStore;
