@@ -53,7 +53,10 @@ bool hash_table_upsert(HashTable *hash_table, const char *key, const char *value
     while (strcmp(hash_table->table[index].key, "") != 0 &&
            strncmp(hash_table->table[index].key, key, KEY_SIZE) != 0) {
         index = (index + 1) % TABLE_SIZE;
-        if (index == original_index) return false;
+        if (index == original_index) {
+            sem_post(&hash_table->lock);
+            return false;
+        }
     }
 
     strncpy(hash_table->table[index].key, key, KEY_SIZE);
