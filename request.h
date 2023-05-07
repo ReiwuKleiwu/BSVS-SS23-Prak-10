@@ -12,6 +12,7 @@ typedef struct Request {
     char response[RESPONSESIZE];
     HashTable *key_value_store;
     SubStore *subscriber_store;
+    int sub_queue_id;
     int client_socket;
     int client_pid;
 } Request;

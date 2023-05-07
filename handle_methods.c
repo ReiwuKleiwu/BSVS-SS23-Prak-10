@@ -5,6 +5,7 @@
 #include "hashtable.h"
 #include <sys/socket.h>
 #include <unistd.h>
+#include "sub_message_queue.h"
 
 void methodHandler(RequestMethod method, const char *key, const char *value, Request client_request) {
     switch (method) {
@@ -50,6 +51,10 @@ void handlePUT(const char *key, const char *value, Request client_request) {
                  "PUT operation: Error occurred while inserting Key: \"%s\", Value: \"%s\".\r\n", key, value);
     }
 
+    char notify_message[MAX_PAYLOAD_SIZE];
+    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Process %d performed PUT-operation on Key: \"%s\" with Value: \"%s\".\r\n", client_request.client_pid, key, value);
+
+    notify_on_event(client_request.sub_queue_id, client_request.subscriber_store, notify_message, key);
     hash_table_print(client_request.key_value_store);
     send_response(client_request);
 }

@@ -1,17 +1,21 @@
+// Standard library headers
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+
+#include <netinet/in.h>
 #include <sys/ipc.h>
-#include "socket_server.h"
-#include "validate_user_input.h"
+#include <sys/shm.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include "handle_requests.h"
 #include "hashtable.h"
-#include "sub_store.h"
 #include "request.h"
-#include <sys/socket.h>
-#include <sys/shm.h>
-#include <netinet/in.h>
+#include "socket_server.h"
+#include "sub_message_queue.h"
+#include "sub_store.h"
+#include "validate_user_input.h"
 
 #define SHOW_LOGS 1
 #define BUFFERSIZE 1024
@@ -26,6 +30,8 @@ void runServer(int port) {
 
     HashTable *hash_table = create_shared_hashtable(hashtable_shm_id);
     SubStore *sub_store = create_shared_sub_store(sub_store_shm_id);
+    int sub_queue_id = create_sub_message_queue(12345);
+
 
     int listening_socket;
 
@@ -55,14 +61,14 @@ void runServer(int port) {
         exit(-1);
     }
 
-    handleClientConnections(listening_socket, hash_table, sub_store);
+    handleClientConnections(listening_socket, hash_table, sub_store, sub_queue_id);
 
     close(listening_socket);
     destroy_shared_hashtable(hashtable_shm_id, hash_table);
     destroy_shared_sub_store(sub_store_shm_id, sub_store);
 }
 
-void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore) {
+void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore, int sub_queue_id) {
     int client_socket;
     char client_request_buffer[BUFFERSIZE];
     struct sockaddr_in client;
@@ -87,12 +93,15 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
 
             ssize_t received_client_bytes;
             while ((received_client_bytes = readUntilNewLine(client_socket, client_request_buffer, BUFFERSIZE)) > 0) {
+                read_new_messages(sub_queue_id, pid);
+
                 Request client_request;
-                memset(client_request.body,0,strlen(client_request.body));
-                memset(client_request.response,0,strlen(client_request.response));
+                memset(client_request.body, 0, strlen(client_request.body));
+                memset(client_request.response, 0, strlen(client_request.response));
                 strncpy(client_request.body, client_request_buffer, strlen(client_request_buffer));
                 client_request.key_value_store = keyValStore;
                 client_request.subscriber_store = subStore;
+                client_request.sub_queue_id = sub_queue_id;
                 client_request.client_socket = client_socket;
                 client_request.client_pid = getpid();
 
