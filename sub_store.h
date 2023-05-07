@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <semaphore.h>
 
 #ifndef SUBTORE_H
 #define SUBTORE_H
@@ -19,6 +20,7 @@ typedef struct _Entry {
 
 typedef struct _SubStore {
     SubEntry table[TABLE_SIZE];
+    sem_t lock;
 } SubStore;
 
 SubStore *create_shared_sub_store(int shm_id);
