@@ -11,6 +11,7 @@ void handleGET(const char* key, Request client_request);
 void handleDELETE(const char* key, Request client_request);
 void handleSUB(const char* key, Request client_request);
 void handleUNSUB(const char* key, Request client_request);
+bool is_subscribed(SubStore* subscriber_store, const char *key, int client_pid);
 void handleQUIT(Request client_request);
 
 
