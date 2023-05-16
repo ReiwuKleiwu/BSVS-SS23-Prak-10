@@ -104,7 +104,6 @@ void handleDELETE(const char *key, Request client_request) {
 }
 
 void handleSUB(const char *key, Request client_request) {
-    printf("Unknown method\n");
     if (is_subscribed(client_request.subscriber_store, key, client_request.client_pid)) {
         snprintf(client_request.response, RESPONSESIZE,
                  "SUB operation: Failed to subscribe to key \"%s\" (already subscribed).\r\n", key);
