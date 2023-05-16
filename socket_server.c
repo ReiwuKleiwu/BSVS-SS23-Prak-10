@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/msg.h>
 
 #include <netinet/in.h>
 #include <sys/ipc.h>
@@ -19,11 +20,13 @@
 
 #define SHOW_LOGS 1
 #define BUFFERSIZE 1024
+#define MAX_CLIENTS 128
 
 void runServer(int port) {
     int hashtable_shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
     int sub_store_shm_id = shmget(IPC_PRIVATE, sizeof(SubStore), 0644 | IPC_CREAT);
-    if (hashtable_shm_id == -1 || sub_store_shm_id == -1) {
+    int client_sockets_shm_id = shmget(IPC_PRIVATE, sizeof(int) * MAX_CLIENTS, 0644 | IPC_CREAT);
+    if (hashtable_shm_id == -1 || sub_store_shm_id == -1 || client_sockets_shm_id == -1) {
         perror("The segment could not be created!");
         exit(1);
     }
@@ -92,9 +95,16 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
 
             int pid = getpid();
 
+            int notification_handler = fork();
+
+            if(notification_handler == 0) {
+                while(1) {
+                    send_new_notifications(sub_queue_id, pid, client_socket);
+                }
+            }
+
             ssize_t received_client_bytes;
             while ((received_client_bytes = readUntilNewLine(client_socket, client_request_buffer, BUFFERSIZE)) > 0) {
-
                 Request client_request;
                 memset(client_request.body, 0, strlen(client_request.body));
                 memset(client_request.response, 0, strlen(client_request.response));
@@ -108,14 +118,15 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
                 sanitizeUserInput(client_request.body);
                 validateFormat(client_request);
                 requestHandler(client_request);
-                send_new_notifications(sub_queue_id);
             }
 
             if (SHOW_LOGS) {
                 printf("INFO: client disconnected\n");
             }
-            exit(0);
+
+
         } else {
+            printf("Closing socket connection...\n");
             close(client_socket);
         }
     }

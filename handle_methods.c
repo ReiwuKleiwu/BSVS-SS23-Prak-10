@@ -52,7 +52,7 @@ void handlePUT(const char *key, const char *value, Request client_request) {
     }
 
     char notify_message[MAX_PAYLOAD_SIZE];
-    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed PUT-Operation on Key: \"%s\" with Value: \"%s\".\r\n", client_request.client_socket, key, value);
+    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed PUT-Operation on Key: \"%s\" with Value: \"%s\".\r\n", client_request.client_pid, key, value);
 
     notify_on_event(client_request.sub_queue_id, client_request.subscriber_store, notify_message, key);
     hash_table_print(client_request.key_value_store);
@@ -96,7 +96,7 @@ void handleDELETE(const char *key, Request client_request) {
                  key);
     }
     char notify_message[MAX_PAYLOAD_SIZE];
-    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed DELETE-Operation on Key: \"%s\".\r\n", client_request.client_socket, key);
+    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed DELETE-Operation on Key: \"%s\".\r\n", client_request.client_pid, key);
 
     notify_on_event(client_request.sub_queue_id, client_request.subscriber_store, notify_message, key);
     hash_table_print(client_request.key_value_store);
@@ -104,14 +104,14 @@ void handleDELETE(const char *key, Request client_request) {
 }
 
 void handleSUB(const char *key, Request client_request) {
-    sub_store_upsert(client_request.subscriber_store, key, client_request.client_socket);
+    sub_store_upsert(client_request.subscriber_store, key, client_request.client_pid);
     sub_store_print(client_request.subscriber_store);
     snprintf(client_request.response, RESPONSESIZE, "Successfully subscribed to key \"%s\".\r\n", key);
     send_response(client_request);
 }
 
 void handleUNSUB(const char *key, Request client_request) {
-    sub_store_delete(client_request.subscriber_store, key, client_request.client_socket);
+    sub_store_delete(client_request.subscriber_store, key, client_request.client_pid);
     sub_store_print(client_request.subscriber_store);
     snprintf(client_request.response, RESPONSESIZE, "Successfully unsubscribed from key \"%s\".\r\n", key);
     send_response(client_request);

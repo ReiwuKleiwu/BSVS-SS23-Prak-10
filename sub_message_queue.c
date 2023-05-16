@@ -17,11 +17,11 @@ void send_notification_message(int queue_id, message sub_message) {
 void notify_on_event(int queue_id, SubStore *sub_store, char *notify_payload, char *event_key) {
     Subscriber *subscribed_processes = sub_store_lookup(sub_store, event_key);
 
-    if(subscribed_processes == NULL) return;
+    if (subscribed_processes == NULL) return;
 
     for (int i = 0; i < MAX_SUBSCRIBER_COUNT; i++) {
         if (subscribed_processes[i].pid == -1) continue;
-        printf("Sub-Pid: %d\n", subscribed_processes[i].pid);
+        printf("Sub-Client-ID: %d\n", subscribed_processes[i].pid);
 
         message tmp_message;
         tmp_message.type = subscribed_processes[i].pid;
@@ -32,14 +32,16 @@ void notify_on_event(int queue_id, SubStore *sub_store, char *notify_payload, ch
     }
 }
 
-void send_new_notifications(int queue_id) {
-    printf("Sending notifications to clients...\n");
-    while(1) {
+void send_new_notifications(int queue_id, int pid, int client_socket) {
+    while (1) {
         message tmp_message;
-        int received_bytes = msgrcv(queue_id, &tmp_message, MAX_PAYLOAD_SIZE, -100, IPC_NOWAIT);
-
-        if(received_bytes == -1) return;
-        send(tmp_message.type, tmp_message.payload, strlen(tmp_message.payload), 0);
+        int received_bytes = msgrcv(queue_id, &tmp_message, MAX_PAYLOAD_SIZE, pid, IPC_NOWAIT);
+        if (received_bytes == -1) return;
+        
+        long error = send(client_socket, tmp_message.payload, strlen(tmp_message.payload), 0);
+        if (error == -1) {
+            perror("Sending message error ");
+        }
     }
 }
 
