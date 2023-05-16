@@ -104,16 +104,30 @@ void handleDELETE(const char *key, Request client_request) {
 }
 
 void handleSUB(const char *key, Request client_request) {
-    sub_store_upsert(client_request.subscriber_store, key, client_request.client_pid);
+    Subscriber * value = sub_store_lookup(client_request.subscriber_store, key);
+
+    if (!value) {
+        sub_store_upsert(client_request.subscriber_store, key, client_request.client_pid);
+        snprintf(client_request.response, RESPONSESIZE, "SUB operation: Successfully subscribed to key \"%s\".\r\n", key);
+    } else {
+        snprintf(client_request.response, RESPONSESIZE,
+                 "SUB operation: Failed to subscribe to key \"%s\" (already subscribed).\r\n", key);
+    }
     sub_store_print(client_request.subscriber_store);
-    snprintf(client_request.response, RESPONSESIZE, "Successfully subscribed to key \"%s\".\r\n", key);
     send_response(client_request);
 }
 
 void handleUNSUB(const char *key, Request client_request) {
-    sub_store_delete(client_request.subscriber_store, key, client_request.client_pid);
+    Subscriber * value = sub_store_lookup(client_request.subscriber_store, key);
+
+    if (!value) {
+        snprintf(client_request.response, RESPONSESIZE,
+                 "UNSUB operation: Failed to unsubscribe from key \"%s\" (not subscribed).\r\n", key);
+    } else {
+        sub_store_delete(client_request.subscriber_store, key, client_request.client_pid);
+        snprintf(client_request.response, RESPONSESIZE, "UNSUB operation: Successfully unsubscribed from key \"%s\".\r\n", key);
+    }
     sub_store_print(client_request.subscriber_store);
-    snprintf(client_request.response, RESPONSESIZE, "Successfully unsubscribed from key \"%s\".\r\n", key);
     send_response(client_request);
 }
 
