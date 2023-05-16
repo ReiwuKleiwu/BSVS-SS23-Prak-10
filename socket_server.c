@@ -116,8 +116,9 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
                 client_request.client_pid = getpid();
 
                 sanitizeUserInput(client_request.body);
-                validateFormat(client_request);
-                requestHandler(client_request);
+                if (isValidateFormat(client_request)) {
+                    requestHandler(client_request);
+                }
             }
 
             if (SHOW_LOGS) {

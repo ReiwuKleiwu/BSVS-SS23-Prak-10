@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include "validate_user_input.h"
 
-void validateFormat(Request client_request) {
+bool isValidateFormat(Request client_request) {
 
     regex_t regex;
-    int requestREGEX = regcomp(&regex, "^(((GET|DELETE|SUB|UNSUB):(\\S*))|((PUT):(\\S*):(\\w|\\d|\\s)*)|QUIT)$", 1);
+    int requestREGEX = regcomp(&regex, "^(((GET|DELETE|SUB|UNSUB):(\\S+))|((PUT):(\\S+):(\\w|\\d|\\s)+)|QUIT)$", 1);
 
     if(requestREGEX) {
         fprintf(stderr, "Could not compile regex\n");
@@ -19,10 +19,13 @@ void validateFormat(Request client_request) {
 
     if(requestREGEXTest) {
         strcpy(client_request.response, "The command must start with PUT:, GET:, DELETE:, QUIT, SUB: or UNSUB: and be in the correct format. \r\n");
+        send_response(client_request);
+        regfree(&regex);
+        return false;
     }
 
     regfree(&regex);
-    send_response(client_request);
+    return true;
 }
 
 
