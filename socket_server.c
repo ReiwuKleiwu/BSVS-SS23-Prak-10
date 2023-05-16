@@ -87,16 +87,16 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
 
 
         if (fork() == 0) {
+            int pid = getpid();
+
             char *connected = "Welcome:\r\n";
             if (SHOW_LOGS) {
-                printf("INFO: client connected\n");
+                printf("INFO: client-%d connected\n", pid);
             }
             send(client_socket, connected, strlen(connected), 0);
 
-            int pid = getpid();
 
             int notification_handler = fork();
-
             if(notification_handler == 0) {
                 while(1) {
                     send_new_notifications(sub_queue_id, pid, client_socket);
@@ -121,12 +121,10 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
             }
 
             if (SHOW_LOGS) {
-                printf("INFO: client disconnected\n");
+                printf("INFO: Client-%d disconnected\n", pid);
             }
 
-
         } else {
-            printf("Closing socket connection...\n");
             close(client_socket);
         }
     }
