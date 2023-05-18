@@ -12,6 +12,8 @@ typedef enum {
     METHOD_DELETE,
     METHOD_SUB,
     METHOD_UNSUB,
+    METHOD_BEG,
+    METHOD_END,
     METHOD_QUIT
 } RequestMethod;
 

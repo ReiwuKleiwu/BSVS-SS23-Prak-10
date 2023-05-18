@@ -26,6 +26,7 @@ void runServer(int port) {
     int hashtable_shm_id = shmget(IPC_PRIVATE, sizeof(HashTable), 0644 | IPC_CREAT);
     int sub_store_shm_id = shmget(IPC_PRIVATE, sizeof(SubStore), 0644 | IPC_CREAT);
     int client_sockets_shm_id = shmget(IPC_PRIVATE, sizeof(int) * MAX_CLIENTS, 0644 | IPC_CREAT);
+    int server_lock_shm_id = shmget(IPC_PRIVATE, sizeof(int), 0644 | IPC_CREAT);
     if (hashtable_shm_id == -1 || sub_store_shm_id == -1 || client_sockets_shm_id == -1) {
         perror("The segment could not be created!");
         exit(1);
@@ -33,6 +34,8 @@ void runServer(int port) {
 
     HashTable *hash_table = create_shared_hashtable(hashtable_shm_id);
     SubStore *sub_store = create_shared_sub_store(sub_store_shm_id);
+    int *server_is_locked_by_transaction = (int *) shmat(server_lock_shm_id, NULL, 0);
+    *server_is_locked_by_transaction = 0;
     int sub_queue_id = create_sub_message_queue(12345);
 
 
@@ -64,19 +67,19 @@ void runServer(int port) {
         exit(-1);
     }
 
-    handleClientConnections(listening_socket, hash_table, sub_store, sub_queue_id);
+    handleClientConnections(listening_socket, hash_table, sub_store, server_is_locked_by_transaction, sub_queue_id);
 
     close(listening_socket);
     destroy_shared_hashtable(hashtable_shm_id, hash_table);
     destroy_shared_sub_store(sub_store_shm_id, sub_store);
 }
 
-void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore, int sub_queue_id) {
+void handleClientConnections(int listening_socket, HashTable *keyValStore, SubStore *subStore,
+                             int *server_is_locked_by_transaction, int sub_queue_id) {
     int client_socket;
     char client_request_buffer[BUFFERSIZE];
     struct sockaddr_in client;
     socklen_t client_len;
-
 
     while (1) {
         if (SHOW_LOGS) {
@@ -97,8 +100,8 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
 
 
             int notification_handler = fork();
-            if(notification_handler == 0) {
-                while(1) {
+            if (notification_handler == 0) {
+                while (1) {
                     send_new_notifications(sub_queue_id, pid, client_socket);
                 }
             }
@@ -114,6 +117,7 @@ void handleClientConnections(int listening_socket, HashTable *keyValStore, SubSt
                 client_request.sub_queue_id = sub_queue_id;
                 client_request.client_socket = client_socket;
                 client_request.client_pid = getpid();
+                client_request.server_is_locked_by_transaction = server_is_locked_by_transaction;
 
                 sanitizeUserInput(client_request.body);
                 if (isValidateFormat(client_request)) {

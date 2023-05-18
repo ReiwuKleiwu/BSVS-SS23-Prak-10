@@ -27,6 +27,12 @@ void methodHandler(RequestMethod method, const char *key, const char *value, Req
         case METHOD_UNSUB:
             handleUNSUB(key, client_request);
             break;
+        case METHOD_BEG:
+            handleBEG(client_request);
+            break;
+        case METHOD_END:
+            handleEND(client_request);
+            break;
         default:
             printf("Unknown method\n");
             break;
@@ -34,6 +40,8 @@ void methodHandler(RequestMethod method, const char *key, const char *value, Req
 }
 
 void handlePUT(const char *key, const char *value, Request client_request) {
+    if(server_is_locked(client_request)) return;
+
     if (value == NULL) {
         snprintf(client_request.response, RESPONSESIZE, "PUT operation: Value is null. Use PUT:KEY:VALUE\r\n");
         return;
@@ -52,7 +60,9 @@ void handlePUT(const char *key, const char *value, Request client_request) {
     }
 
     char notify_message[MAX_PAYLOAD_SIZE];
-    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed PUT-Operation on Key: \"%s\" with Value: \"%s\".\r\n", client_request.client_pid, key, value);
+    snprintf(notify_message, MAX_PAYLOAD_SIZE,
+             "Client_%d performed PUT-Operation on Key: \"%s\" with Value: \"%s\".\r\n", client_request.client_pid, key,
+             value);
 
     notify_on_event(client_request.sub_queue_id, client_request.subscriber_store, notify_message, key);
     hash_table_print(client_request.key_value_store);
@@ -60,6 +70,8 @@ void handlePUT(const char *key, const char *value, Request client_request) {
 }
 
 void handleGET(const char *key, Request client_request) {
+    if(server_is_locked(client_request)) return;
+
     if (key == NULL) {
         snprintf(client_request.response, RESPONSESIZE, "GET operation: Key is null. Use GET:KEY\r\n");
         return;
@@ -80,6 +92,8 @@ void handleGET(const char *key, Request client_request) {
 }
 
 void handleDELETE(const char *key, Request client_request) {
+    if(server_is_locked(client_request)) return;
+
     if (key == NULL) {
         snprintf(client_request.response, RESPONSESIZE, "DELETE operation: Key is null. Use DELETE:KEY\r\n");
         return;
@@ -96,7 +110,8 @@ void handleDELETE(const char *key, Request client_request) {
                  key);
     }
     char notify_message[MAX_PAYLOAD_SIZE];
-    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed DELETE-Operation on Key: \"%s\".\r\n", client_request.client_pid, key);
+    snprintf(notify_message, MAX_PAYLOAD_SIZE, "Client_%d performed DELETE-Operation on Key: \"%s\".\r\n",
+             client_request.client_pid, key);
 
     notify_on_event(client_request.sub_queue_id, client_request.subscriber_store, notify_message, key);
     hash_table_print(client_request.key_value_store);
@@ -104,12 +119,15 @@ void handleDELETE(const char *key, Request client_request) {
 }
 
 void handleSUB(const char *key, Request client_request) {
+    if(server_is_locked(client_request)) return;
+
     if (is_subscribed(client_request.subscriber_store, key, client_request.client_pid)) {
         snprintf(client_request.response, RESPONSESIZE,
                  "SUB operation: Failed to subscribe to key \"%s\" (already subscribed).\r\n", key);
     } else {
         sub_store_upsert(client_request.subscriber_store, key, client_request.client_pid);
-        snprintf(client_request.response, RESPONSESIZE, "SUB operation: Successfully subscribed to key \"%s\".\r\n", key);
+        snprintf(client_request.response, RESPONSESIZE, "SUB operation: Successfully subscribed to key \"%s\".\r\n",
+                 key);
     }
 
     sub_store_print(client_request.subscriber_store);
@@ -117,15 +135,43 @@ void handleSUB(const char *key, Request client_request) {
 }
 
 void handleUNSUB(const char *key, Request client_request) {
+    if(server_is_locked(client_request)) return;
+
     if (is_subscribed(client_request.subscriber_store, key, client_request.client_pid)) {
         sub_store_delete(client_request.subscriber_store, key, client_request.client_pid);
-        snprintf(client_request.response, RESPONSESIZE, "UNSUB operation: Successfully unsubscribed from key \"%s\".\r\n", key);
+        snprintf(client_request.response, RESPONSESIZE,
+                 "UNSUB operation: Successfully unsubscribed from key \"%s\".\r\n", key);
     } else {
         snprintf(client_request.response, RESPONSESIZE,
                  "UNSUB operation: Failed to unsubscribe from key \"%s\" (not subscribed).\r\n", key);
     }
 
     sub_store_print(client_request.subscriber_store);
+    send_response(client_request);
+}
+
+void handleBEG(Request client_request) {
+    if (*client_request.server_is_locked_by_transaction == 0) {
+        *client_request.server_is_locked_by_transaction = client_request.client_pid;
+        snprintf(client_request.response, RESPONSESIZE,
+                 "Started transaction successfully.\r\n");
+    } else {
+        snprintf(client_request.response, RESPONSESIZE,
+                 "BEG operation: Another transaction was already started.\r\n");
+    }
+    send_response(client_request);
+}
+
+void handleEND(Request client_request) {
+    if (*client_request.server_is_locked_by_transaction != 0 &&
+        *client_request.server_is_locked_by_transaction == client_request.client_pid) {
+        *client_request.server_is_locked_by_transaction = 0;
+        snprintf(client_request.response, RESPONSESIZE,
+                 "Ended transaction successfully.\r\n");
+    } else {
+        snprintf(client_request.response, RESPONSESIZE,
+                 "END operation: Either the server isn't locked or you are not the one who locked it.\r\n");
+    }
     send_response(client_request);
 }
 
@@ -138,8 +184,7 @@ void handleQUIT(Request client_request) {
 }
 
 
-
-bool is_subscribed(SubStore* subscriber_store, const char* key, int client_pid) {
+bool is_subscribed(SubStore *subscriber_store, const char *key, int client_pid) {
     Subscriber *subscribed_processes = sub_store_lookup(subscriber_store, key);
 
     if (!subscribed_processes) return false;
@@ -148,6 +193,17 @@ bool is_subscribed(SubStore* subscriber_store, const char* key, int client_pid) 
         if (subscribed_processes[i].pid == client_pid) {
             return true;
         }
+    }
+    return false;
+}
+
+bool server_is_locked(Request client_request) {
+    if (*client_request.server_is_locked_by_transaction != 0 &&
+        *client_request.server_is_locked_by_transaction != client_request.client_pid) {
+        snprintf(client_request.response, RESPONSESIZE,
+                 "The server is currently locked by a transaction.\r\n");
+        send_response(client_request);
+        return true;
     }
     return false;
 }

@@ -15,6 +15,7 @@ typedef struct Request {
     int sub_queue_id;
     int client_socket;
     int client_pid;
+    int *server_is_locked_by_transaction;
 } Request;
 
 void send_response(Request client_request);

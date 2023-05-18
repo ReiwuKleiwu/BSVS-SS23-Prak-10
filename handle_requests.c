@@ -15,6 +15,10 @@ RequestMethod stringToRequestMethod(const char *method) {
         return METHOD_SUB;
     } else if (strcmp(method, "UNSUB") == 0) {
         return METHOD_UNSUB;
+    } else if (strcmp(method, "BEG") == 0) {
+        return METHOD_BEG;
+    } else if (strcmp(method, "END") == 0) {
+        return METHOD_END;
     } else if (strcmp(method, "QUIT") == 0) {
         return METHOD_QUIT;
     } else {
